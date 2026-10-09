@@ -1,0 +1,31 @@
+# DuoStage — Cloudflare Workers runtime
+# Deploy:  wrangler deploy          (needs: wrangler login)
+# Local:   wrangler dev             (miniflare simulates KV/R2/assets, no auth)
+# Bindings below are created once per environment:
+#   wrangler kv namespace create DS_KV
+#   wrangler r2 bucket create duostage-uploads
+name = "duostage"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+# static site (kept in sync from repo root by scripts/sync-public.mjs)
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+# zombie-job sweep: fail + refund pending/running jobs past the timeout
+[triggers]
+crons = ["* * * * *"]
+
+[[kv_namespaces]]
+binding = "DS_KV"
+id = "replace-with-kv-id"
+preview_id = "replace-with-preview-kv-id"
+
+[[r2_buckets]]
+binding = "DS_R2"
+bucket_name = "duostage-uploads"
+
+[vars]
+DS_DEV_ENDPOINTS = "on"
+# DS_SECRET must be set via `wrangler secret put DS_SECRET` in production

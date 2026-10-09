@@ -1,0 +1,10 @@
+# Workers Static Assets cache policy: never cache html/js/css during the
+# skeleton phase so edits land immediately; images may cache briefly.
+/*.html
+  Cache-Control: no-cache
+/js/*
+  Cache-Control: no-cache
+/css/*
+  Cache-Control: no-cache
+/assets/*
+  Cache-Control: public, max-age=300

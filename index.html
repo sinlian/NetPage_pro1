@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DuoStage AI 鈥?Turn Two Photos into a Shared Performance</title>
+<meta name="description" content="DuoStage AI turns two portraits into one 15-second duet on a warm orange set with a hanging mic. One-time credits, no subscription, no prompt writing.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23ff2e7e'/%3E%3Crect x='26' y='14' width='12' height='26' rx='6' fill='%23fff'/%3E%3Cpath d='M20 34a12 12 0 0 0 24 0' fill='none' stroke='%23fff' stroke-width='4' stroke-linecap='round'/%3E%3Cline x1='32' y1='46' x2='32' y2='52' stroke='%23fff' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ===== SVG sprite: stage scenes & portraits ===== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <radialGradient id="stageGlow" cx="50%" cy="30%" r="85%">
+      <stop offset="0%" stop-color="#f2913f"/>
+      <stop offset="55%" stop-color="#d96a24"/>
+      <stop offset="100%" stop-color="#9c4410"/>
+    </radialGradient>
+    <symbol id="stageScene" viewBox="0 0 640 360">
+      <rect width="640" height="360" fill="url(#stageGlow)"/>
+      <ellipse cx="320" cy="356" rx="320" ry="46" fill="#7e3608" opacity=".5"/>
+      <!-- hanging mic -->
+      <line x1="320" y1="0" x2="320" y2="92" stroke="#33241a" stroke-width="5"/>
+      <rect x="306" y="92" width="28" height="56" rx="14" fill="#efe8dc"/>
+      <rect x="306" y="92" width="28" height="22" rx="11" fill="#cfc7b9"/>
+      <circle cx="320" cy="132" r="4" fill="#8d857a"/>
+      <!-- left performer -->
+      <g>
+        <circle cx="212" cy="196" r="36" fill="#c98d63"/>
+        <path d="M176 196a36 36 0 0 1 72 0v-10a36 26 0 0 0-72 0z" fill="#b9b3ad"/>
+        <rect x="164" y="236" width="96" height="124" rx="40" fill="#2e5d43"/>
+        <rect x="150" y="248" width="26" height="76" rx="13" fill="#2e5d43" transform="rotate(14 163 248)"/>
+        <rect x="248" y="248" width="26" height="76" rx="13" fill="#2e5d43" transform="rotate(-18 261 248)"/>
+      </g>
+      <!-- right performer -->
+      <g>
+        <circle cx="428" cy="200" r="36" fill="#e8b48c"/>
+        <path d="M392 202a36 40 0 0 1 72 0l6 26q-42 14-84 0z" fill="#a8402f"/>
+        <rect x="380" y="240" width="96" height="120" rx="40" fill="#2456b0"/>
+        <rect x="462" y="240" width="26" height="80" rx="13" fill="#2456b0" transform="rotate(-42 475 240)"/>
+        <rect x="368" y="252" width="26" height="72" rx="13" fill="#2456b0" transform="rotate(16 381 252)"/>
+      </g>
+      <!-- spot lights -->
+      <circle cx="90" cy="60" r="26" fill="#ffd9a8" opacity=".25"/>
+      <circle cx="556" cy="72" r="20" fill="#ffd9a8" opacity=".2"/>
+    </symbol>
+    <symbol id="portraitA" viewBox="0 0 96 96">
+      <rect width="96" height="96" fill="#274b39"/>
+      <circle cx="48" cy="40" r="20" fill="#c98d63"/>
+      <path d="M28 40a20 20 0 0 1 40 0v-6a20 14 0 0 0-40 0z" fill="#b9b3ad"/>
+      <path d="M18 96a30 26 0 0 1 60 0z" fill="#3c7a58"/>
+    </symbol>
+    <symbol id="portraitB" viewBox="0 0 96 96">
+      <rect width="96" height="96" fill="#1d3f7e"/>
+      <circle cx="48" cy="42" r="20" fill="#e8b48c"/>
+      <path d="M28 44a20 22 0 0 1 40 0l4 14q-24 8-48 0z" fill="#a8402f"/>
+      <path d="M18 96a30 26 0 0 1 60 0z" fill="#3a6fd0"/>
+    </symbol>
+  </defs>
+</svg>
+
+<!-- ===== Header ===== -->
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="logo" href="#top">
+      <span class="logo-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="18" height="18"><rect x="9.5" y="3" width="5" height="10" rx="2.5" fill="#fff"/><path d="M7 11a5 5 0 0 0 10 0" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="16.5" x2="12" y2="20" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+      </span>
+      <span class="logo-word">duo<strong>stage</strong></span>
+      <span class="badge">AI</span>
+    </a>
+    <div class="lang-switch">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><ellipse cx="12" cy="12" rx="4" ry="9" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="3" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="1.6"/></svg>
+      <select id="langSelect" aria-label="Language">
+        <option value="en">English</option>
+        <option value="zh">涓枃</option>
+      </select>
+    </div>
+    <nav class="nav" id="siteNav" aria-label="Main">
+      <a href="#examples" data-i18n="nav.examples">Examples</a>
+      <a href="#how" data-i18n="nav.how">How it works</a>
+      <a href="#pricing" data-i18n="nav.pricing">Pricing</a>
+      <a href="#guides" data-i18n="nav.guides">Guides</a>
+      <span class="nav-auth" id="navAuth"></span>
+    </nav>
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- ===== Hero ===== -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-copy">
+        <h1 data-i18n-html="hero.h1">Two photos in.<br>One duet out.</h1>
+        <p class="lead" data-i18n="hero.lead">DuoStage casts your two portraits into a shared performance on our signature orange set 鈥?hanging mic, warm light and a little choreography included. Preview real renders before you spend a credit.</p>
+        <p class="hero-meta" data-i18n-html="hero.meta">1 video 路 15s 路 768P 路 from <strong>$4.99</strong>, one-time</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#create" data-i18n-html="hero.cta">Start my duet <span class="arrow">鈫?/span></a>
+          <a class="btn btn-quiet" href="#examples" data-i18n="hero.cta2">Watch real examples</a>
+        </div>
+        <p class="fine" data-i18n="hero.fine">Audio is generated fresh for every render. No original recordings included.</p>
+      </div>
+
+      <!-- Studio grid: upload + preview -->
+      <div class="studio-grid" id="create">
+        <div class="card upload-card">
+          <h2 data-i18n="up.h2">Add your two performers</h2>
+          <p class="card-sub" data-i18n="up.sub">One person per photo. Keep the face and shoulders clearly visible.</p>
+          <p class="fine" data-i18n-html="up.privacy">Uploads stay private and are used only to render your clip. <a href="#faq">Read the photo notes</a></p>
+
+          <div class="dz-row">
+            <label class="dz" id="dz1">
+              <input type="file" accept="image/jpeg,image/png,image/webp" hidden data-slot="1">
+              <span class="dz-title" data-i18n="up.p1">Photo 1</span>
+              <span class="dz-sub" data-i18n="up.p1sub">Left performer</span>
+              <span class="dz-art" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 16V5m0 0l-4 4m4-4l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              </span>
+              <span class="dz-cta" data-i18n="up.choose">Choose image</span>
+              <img class="dz-preview" alt="Photo 1 preview">
+            </label>
+            <label class="dz" id="dz2">
+              <input type="file" accept="image/jpeg,image/png,image/webp" hidden data-slot="2">
+              <span class="dz-title" data-i18n="up.p2">Photo 2</span>
+              <span class="dz-sub" data-i18n="up.p2sub">Right performer</span>
+              <span class="dz-art" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 16V5m0 0l-4 4m4-4l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              </span>
+              <span class="dz-cta" data-i18n="up.choose">Choose image</span>
+              <img class="dz-preview" alt="Photo 2 preview">
+            </label>
+          </div>
+          <div class="dz-foot">
+            <span class="fine" data-i18n="up.formats">JPG / PNG / WebP 路 10 MB each</span>
+            <button class="link-btn" id="swapBtn" type="button" data-i18n="up.swap">Swap sides</button>
+          </div>
+
+          <div class="field">
+            <span class="field-label" data-i18n="up.engine">Motion engine</span>
+            <div class="seg" data-group="model">
+              <button class="seg-btn is-on" type="button" data-value="aurora">Aurora H3</button>
+              <button class="seg-btn" type="button" data-value="flow">FlowFrame 2.5</button>
+              <button class="seg-btn" type="button" data-value="omni">OmniTake 3.0</button>
+            </div>
+            <span class="fine" data-i18n="up.engineNote">Movement and audio can differ slightly between engines.</span>
+          </div>
+
+          <div class="field">
+            <span class="field-label"><span data-i18n="up.settingsLabel">Clip settings</span> 路 <span id="settingSummary">15s 路 768P 路 9:16</span></span>
+            <div class="seg-row">
+              <div class="seg" data-group="duration">
+                <button class="seg-btn" type="button" data-value="5">5s</button>
+                <button class="seg-btn" type="button" data-value="10">10s</button>
+                <button class="seg-btn is-on" type="button" data-value="15">15s</button>
+              </div>
+              <div class="seg" data-group="quality">
+                <button class="seg-btn is-on" type="button" data-value="768">768P</button>
+                <button class="seg-btn" type="button" data-value="2k">2K</button>
+              </div>
+              <div class="seg" data-group="frame">
+                <button class="seg-btn is-on" type="button" data-value="9:16">9:16</button>
+                <button class="seg-btn" type="button" data-value="16:9">16:9</button>
+                <button class="seg-btn" type="button" data-value="1:1">1:1</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="cost-line">
+            <span data-i18n="up.cost">Cost</span>
+            <strong id="costValue">240 credits</strong>
+          </div>
+          <p class="fine" data-i18n="up.single">Single pack: $4.99 for one 15s / 768P clip.</p>
+
+          <button class="btn btn-primary btn-block" id="generateBtn" type="button" disabled data-i18n="up.genCta">Choose both photos to continue</button>
+          <p class="fine center" data-i18n-html="up.terms">One-time payment, no auto-renewal. Failed renders return their credits. <a href="#pricing">Compare packs</a></p>
+        </div>
+
+        <div class="card preview-card">
+          <div class="tabs" role="tablist">
+            <button class="tab is-on" type="button" data-tab="example" role="tab" data-i18n="pv.tabExample">Example</button>
+            <button class="tab" type="button" data-tab="mine" role="tab" data-i18n="pv.tabMine">My renders</button>
+          </div>
+          <div class="stage" data-pane="example">
+            <span class="stage-badge">1 / 2</span>
+            <svg class="stage-svg" viewBox="0 0 640 360" role="img" aria-label="Two performers sharing a hanging microphone on an orange studio set"><use href="#stageScene"/></svg>
+            <button class="play-btn" type="button" aria-label="Play example" data-i18n-aria="pv.playAria">
+              <svg viewBox="0 0 24 24" width="22" height="22"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>
+            </button>
+          </div>
+          <div class="stage stage-jobs" data-pane="mine" hidden>
+            <p class="stage-empty-msg" id="mineEmpty" data-i18n-html="pv.empty">No renders yet.<br>Your finished clips will appear here.</p>
+            <div class="job-list" id="jobList"></div>
+          </div>
+          <div class="chips">
+            <span class="chip" data-i18n="pv.chip1">Reference-guided performance</span>
+            <span class="chip" data-i18n="pv.chip2">No prompt writing</span>
+            <span class="chip" data-i18n="pv.chip3">No subscription</span>
+            <span class="chip" data-i18n="pv.chip4">5鈥?5s 路 768P / 2K</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Examples ===== -->
+  <section class="section" id="examples">
+    <div class="container">
+      <div class="section-head">
+        <h2 data-i18n="ex.h2">Two photos. See the whole take.</h2>
+        <p class="lead" data-i18n="ex.lead">House demos, unedited. Both faces, both wardrobes, full clip 鈥?judge it before you buy.</p>
+        <p class="fine" data-i18n="ex.fine">The two demos below reuse the same fictional portraits in opposite roles. They are studio tests, not customer uploads, and never a promise of identical output.</p>
+      </div>
+      <div class="examples-grid">
+        <article class="card example-card">
+          <h3 data-i18n="ex.c1">The house duo</h3>
+          <div class="thumb-row">
+            <figure class="thumb"><svg viewBox="0 0 96 96"><use href="#portraitA"/></svg><figcaption data-i18n="ex.left">Left input</figcaption></figure>
+            <figure class="thumb"><svg viewBox="0 0 96 96"><use href="#portraitB"/></svg><figcaption data-i18n="ex.right">Right input</figcaption></figure>
+            <span class="thumb-arrow">鈫?/span>
+            <figure class="thumb thumb-wide"><svg viewBox="0 0 640 360"><use href="#stageScene"/></svg><figcaption data-i18n="ex.out">Full output</figcaption></figure>
+          </div>
+          <p class="fine" data-i18n="ex.meta">15s 路 768P 路 16:9 路 240 credits 路 studio test</p>
+        </article>
+        <article class="card example-card">
+          <h3 data-i18n="ex.c2">Same duo, sides flipped</h3>
+          <div class="thumb-row">
+            <figure class="thumb"><svg viewBox="0 0 96 96"><use href="#portraitB"/></svg><figcaption data-i18n="ex.left">Left input</figcaption></figure>
+            <figure class="thumb"><svg viewBox="0 0 96 96"><use href="#portraitA"/></svg><figcaption data-i18n="ex.right">Right input</figcaption></figure>
+            <span class="thumb-arrow">鈫?/span>
+            <figure class="thumb thumb-wide flipped"><svg viewBox="0 0 640 360"><use href="#stageScene"/></svg><figcaption data-i18n="ex.out">Full output</figcaption></figure>
+          </div>
+          <p class="fine" data-i18n="ex.meta">15s 路 768P 路 16:9 路 240 credits 路 studio test</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== How it works ===== -->
+  <section class="section section-alt" id="how">
+    <div class="container">
+      <div class="section-head">
+        <h2 data-i18n="how.h2">How a DuoStage clip gets made</h2>
+        <p class="lead" data-i18n="how.lead">Three moves, zero timeline editing.</p>
+      </div>
+      <div class="how-grid">
+        <div class="steps">
+          <div class="step">
+            <span class="step-num">01</span>
+            <div>
+              <h3 data-i18n="how.s1h">Cast your duo</h3>
+              <p data-i18n="how.s1p">One clear portrait for the left slot, one for the right. Double-check both before you continue.</p>
+            </div>
+          </div>
+          <div class="step">
+            <span class="step-num">02</span>
+            <div>
+              <h3 data-i18n="how.s2h">Hand over the set</h3>
+              <p data-i18n="how.s2p">Our built-in reference clip directs the blocking, the camera and the beat. Your photos supply the cast.</p>
+            </div>
+          </div>
+          <div class="step">
+            <span class="step-num">03</span>
+            <div>
+              <h3 data-i18n="how.s3h">Watch, save, encore</h3>
+              <p data-i18n="how.s3p">Preview the finished take, download it, and queue another pair whenever the mood strikes.</p>
+            </div>
+          </div>
+        </div>
+        <div class="template-card">
+          <span class="template-tag" data-i18n="how.tag">THE DUOSTAGE SET 路 9:16 / 16:9 / 1:1</span>
+          <svg class="stage-svg" viewBox="0 0 640 360" aria-hidden="true"><use href="#stageScene"/></svg>
+          <div class="template-labels">
+            <span data-i18n-html="how.l1"><b>01</b> your left star</span>
+            <span data-i18n-html="how.l2"><b>02</b> your right star</span>
+          </div>
+          <p class="template-line" data-i18n="how.line">Two references. One shared scene. A little rhythm.</p>
+          <div class="chips">
+            <span class="chip chip-dark" data-i18n="how.chip1">Orange backdrop</span>
+            <span class="chip chip-dark" data-i18n="how.chip2">Hanging mic</span>
+            <span class="chip chip-dark" data-i18n="how.chip3">Synced movement</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== What is ===== -->
+  <section class="section">
+    <div class="container narrow">
+      <h2 data-i18n="what.h2">What exactly is DuoStage?</h2>
+      <p class="lead" data-i18n="what.lead">It is the two-photo duet format: two subjects trading verses around a suspended microphone inside a saturated orange room. DuoStage is an independent generator for that format 鈥?your portraits provide the performers while a fixed reference clip provides the scene, the motion and the camera timing. There is no timeline to edit and no prompt to write.</p>
+    </div>
+  </section>
+
+  <!-- ===== At a glance ===== -->
+  <section class="section section-alt">
+    <div class="container">
+      <div class="section-head">
+        <h2 data-i18n="gl.h2">Your clip, at a glance.</h2>
+      </div>
+      <div class="glance-grid">
+        <div class="glance-item">
+          <h3 data-i18n="gl.1h">Two photos</h3>
+          <p data-i18n="gl.1p">One image per performer. The set, the blocking and the prompt are already built in.</p>
+        </div>
+        <div class="glance-item">
+          <h3 data-i18n="gl.2h">Your framing</h3>
+          <p data-i18n="gl.2p">5 to 15 seconds, 768P or 2K. Portrait, landscape or square 鈥?your call.</p>
+        </div>
+        <div class="glance-item">
+          <h3 data-i18n="gl.3h">One-time credits</h3>
+          <p data-i18n="gl.3p">From $4.99 for a single 15-second 768P clip. No subscription, ever.</p>
+        </div>
+        <div class="glance-item">
+          <h3 data-i18n="gl.4h">Preview first</h3>
+          <p data-i18n="gl.4p">Watch the free house demos end to end before you buy a single credit.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Pricing ===== -->
+  <section class="section" id="pricing">
+    <div class="container">
+      <div class="section-head">
+        <h2 data-i18n="pr.h2">Pick your credit pack.</h2>
+        <p class="lead" data-i18n="pr.lead">One-time packs, no renewal. Mix any length from 5 to 15 seconds, in 768P or 2K.</p>
+      </div>
+      <div class="pricing-grid">
+        <article class="card price-card">
+          <h3 data-i18n="pr.n1">Single</h3>
+          <p class="price-sub" data-i18n="pr.singleSub">Test the waters</p>
+          <p class="price">$4.99<span data-i18n="pr.usd">USD 路 one-time</span></p>
+          <p class="price-videos" data-i18n-html="pr.v1"><strong>1 video</strong> 路 15s / 768P 路 240 credits</p>
+          <ul>
+            <li data-i18n="pr.li1">One 15s clip at 768P</li>
+            <li data-i18n="pr.li3">Downloads included</li>
+            <li data-i18n="pr.li4">Credits never expire</li>
+            <li data-i18n="pr.li5">Failed renders refund credits</li>
+          </ul>
+          <button type="button" class="btn btn-outline btn-block" data-pack="single" data-i18n="pr.c1">Choose Single</button>
+        </article>
+        <article class="card price-card">
+          <h3 data-i18n="pr.n2">Starter</h3>
+          <p class="price-sub" data-i18n="pr.starterSub">A pair of takes</p>
+          <p class="price">$9.90<span data-i18n="pr.usd">USD 路 one-time</span></p>
+          <p class="price-videos" data-i18n-html="pr.v2"><strong>2 videos</strong> 路 15s / 768P 路 480 credits</p>
+          <ul>
+            <li data-i18n="pr.li2">Pick any engine and quality</li>
+            <li data-i18n="pr.li3">Downloads included</li>
+            <li data-i18n="pr.li4">Credits never expire</li>
+            <li data-i18n="pr.li5">Failed renders refund credits</li>
+          </ul>
+          <button type="button" class="btn btn-outline btn-block" data-pack="starter" data-i18n="pr.c2">Choose Starter</button>
+        </article>
+        <article class="card price-card">
+          <h3 data-i18n="pr.n3">Creator</h3>
+          <p class="price-sub" data-i18n="pr.creatorSub">For serial duettists</p>
+          <p class="price">$24.90<span data-i18n="pr.usd">USD 路 one-time</span></p>
+          <p class="price-videos" data-i18n-html="pr.v6"><strong>6 videos</strong> 路 15s / 768P 路 1,440 credits</p>
+          <ul>
+            <li data-i18n="pr.li2">Pick any engine and quality</li>
+            <li data-i18n="pr.li3">Downloads included</li>
+            <li data-i18n="pr.li4">Credits never expire</li>
+            <li data-i18n="pr.li5">Failed renders refund credits</li>
+          </ul>
+          <button type="button" class="btn btn-outline btn-block" data-pack="creator" data-i18n="pr.c3">Choose Creator</button>
+        </article>
+        <article class="card price-card featured">
+          <span class="flag" data-i18n="pr.flag">Best value</span>
+          <h3 data-i18n="pr.n4">Studio</h3>
+          <p class="price-sub" data-i18n="pr.studioSub">The whole season</p>
+          <p class="price">$49.90<span data-i18n="pr.usd">USD 路 one-time</span></p>
+          <p class="price-videos" data-i18n-html="pr.v14"><strong>14 videos</strong> 路 15s / 768P 路 3,360 credits</p>
+          <ul>
+            <li data-i18n="pr.li2">Pick any engine and quality</li>
+            <li data-i18n="pr.li3">Downloads included</li>
+            <li data-i18n="pr.li4">Credits never expire</li>
+            <li data-i18n="pr.li5">Failed renders refund credits</li>
+          </ul>
+          <button type="button" class="btn btn-primary btn-block" data-pack="studio" data-i18n="pr.c4">Choose Studio</button>
+        </article>
+      </div>
+      <div class="credit-table-wrap" id="creditTable" hidden></div>
+      <p class="fine center" data-i18n="pr.fine">Payment is one-time with no auto-renewal. Re-rendering a finished clip spends credits; failed renders return them.</p>
+    </div>
+  </section>
+
+  <!-- ===== Photo tips ===== -->
+  <section class="section section-alt">
+    <div class="container">
+      <div class="section-head">
+        <h2 data-i18n="tips.h2">Better photos, better first take.</h2>
+        <a class="btn btn-quiet" href="#guides" data-i18n="tips.btn">Open the photo checklist</a>
+      </div>
+      <div class="tips-grid">
+        <div class="card tip-card">
+          <h3 data-i18n="tips.1h">Keep it solo</h3>
+          <p data-i18n="tips.1p">A single subject per image makes the left and right roles easy to read.</p>
+        </div>
+        <div class="card tip-card">
+          <h3 data-i18n="tips.2h">Leave some air</h3>
+          <p data-i18n="tips.2p">Frame face plus upper body with breathing room around head and shoulders.</p>
+        </div>
+        <div class="card tip-card">
+          <h3 data-i18n="tips.3h">Light it honestly</h3>
+          <p data-i18n="tips.3p">Sharp, evenly lit shots beat heavy filters or motion blur as a reference.</p>
+        </div>
+        <div class="card tip-card">
+          <h3 data-i18n="tips.4h">Watch it whole</h3>
+          <p data-i18n="tips.4p">Screen both performers across the full clip before you download or share.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FAQ ===== -->
+  <section class="section" id="faq">
+    <div class="container narrow">
+      <div class="section-head">
+        <h2 data-i18n="faq.h2">Questions, answered.</h2>
+        <p class="lead" data-i18n="faq.lead">Everything about photos, the reference clip and credits.</p>
+      </div>
+      <div class="faq">
+        <div class="faq-item">
+          <button class="faq-q" type="button" aria-expanded="false"><span data-i18n="faq.q1">What is the duet-video trend people keep sharing?</span><span class="faq-icon">+</span></button>
+          <div class="faq-a"><p data-i18n="faq.a1">It is the two-performer format staged around a suspended microphone in a saturated orange room. DuoStage builds its own take on that format from two photos plus a fixed reference clip. We are an independent tool and include no original recordings.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" type="button" aria-expanded="false"><span data-i18n="faq.q2">Is DuoStage free to use?</span><span class="faq-icon">+</span></button>
+          <div class="faq-a"><p data-i18n="faq.a2">Watching the house demos is free. Rendering your own clip takes credits: packs start at $4.99 for 240 credits, which covers one 15-second 768P video. There is no subscription and no free render trial.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" type="button" aria-expanded="false"><span data-i18n="faq.q3">What should I upload?</span><span class="faq-icon">+</span></button>
+          <div class="faq-a"><p data-i18n="faq.a3">Two images, one per performer. The first photo guides the left performer, the second guides the right. JPG, PNG or WebP up to 10 MB each.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" type="button" aria-expanded="false"><span data-i18n="faq.q4">Do I need to write a prompt?</span><span class="faq-icon">+</span></button>
+          <div class="faq-a"><p data-i18n="faq.a4">No. The fixed reference clip directs the performance, the set and the camera timing, while a built-in prompt assigns each photo its side. You only supply the two portraits.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" type="button" aria-expanded="false"><span data-i18n="faq.q5">Which sizes and formats can I export?</span><span class="faq-icon">+</span></button>
+          <div class="faq-a"><p data-i18n="faq.a5">Choose 5, 10 or 15 seconds at 768P or 2K, framed as 9:16 portrait (the default), 16:9 landscape or 1:1 square.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" type="button" aria-expanded="false"><span data-i18n="faq.q6">Can I cast pets or characters instead?</span><span class="faq-icon">+</span></button>
+          <div class="faq-a"><p data-i18n="faq.a6">The same two-photo workflow accepts other subjects. Results depend on the source images and the motion engine, so treat it as an experiment.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" type="button" aria-expanded="false"><span data-i18n="faq.q7">Will the render match my photos exactly?</span><span class="faq-icon">+</span></button>
+          <div class="faq-a"><p data-i18n="faq.a7">The images steer each performer's look, but generative video can shift details. Clear, well-lit portraits give the engine the strongest reference.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" type="button" aria-expanded="false"><span data-i18n="faq.q8">What happens when a render fails?</span><span class="faq-icon">+</span></button>
+          <div class="faq-a"><p data-i18n="faq.a8">A confirmed failure returns the credits that request reserved. While a request is pending, its credits stay reserved until the outcome is known. A finished clip keeps its credits even if you choose to re-render.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" type="button" aria-expanded="false"><span data-i18n="faq.q9">Can I download my clips?</span><span class="faq-icon">+</span></button>
+          <div class="faq-a"><p data-i18n="faq.a9">Yes. Preview the finished take, then download it from the studio or from your render library. Re-downloading the same result costs nothing, but clips may not stay hosted forever 鈥?keep copies of the ones you love.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Guides ===== -->
+  <section class="section section-alt" id="guides">
+    <div class="container">
+      <div class="section-head">
+        <h2 data-i18n="gu.h2">Before your first take.</h2>
+        <p class="lead" data-i18n="gu.lead">Short, practical reads from the studio notebook.</p>
+      </div>
+      <div class="guides-grid">
+        <article class="card guide-card">
+          <span class="guide-tag" data-i18n="gu.t1">Pricing</span>
+          <h3 data-i18n="gu.1h">What does a duet clip actually cost?</h3>
+          <p data-i18n="gu.1p">Packs, credits per clip and how many finished videos each setting buys you.</p>
+          <a class="link-btn" href="#pricing" data-i18n="gu.read">Read the note 鈫?/a>
+        </article>
+        <article class="card guide-card">
+          <span class="guide-tag" data-i18n="gu.t2">Photos</span>
+          <h3 data-i18n="gu.2h">Choosing portraits that perform</h3>
+          <p data-i18n="gu.2p">Framing, left and right roles, and which details tend to drift between photo and render.</p>
+          <a class="link-btn" href="#faq" data-i18n="gu.read">Read the note 鈫?/a>
+        </article>
+        <article class="card guide-card">
+          <span class="guide-tag" data-i18n="gu.t3">Buying guide</span>
+          <h3 data-i18n="gu.3h">Comparing duet-video generators</h3>
+          <p data-i18n="gu.3p">A checklist covering full examples, two-subject support, pricing, audio and privacy.</p>
+          <a class="link-btn" href="#examples" data-i18n="gu.read">Read the note 鈫?/a>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Final CTA ===== -->
+  <section class="cta-final">
+    <div class="container">
+      <h2 data-i18n-html="cta.h2">Two portraits.<br>One standing ovation.</h2>
+      <a class="btn btn-primary btn-lg" href="#create" data-i18n-html="hero.cta">Start my duet <span class="arrow">鈫?/span></a>
+    </div>
+  </section>
+</main>
+
+<!-- ===== Footer ===== -->
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <div class="footer-brand">
+      <a class="logo" href="#top">
+        <span class="logo-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18"><rect x="9.5" y="3" width="5" height="10" rx="2.5" fill="#fff"/><path d="M7 11a5 5 0 0 0 10 0" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="16.5" x2="12" y2="20" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+        </span>
+        <span class="logo-word">duo<strong>stage</strong></span>
+        <span class="badge">AI</span>
+      </a>
+      <p class="fine" data-i18n="ft.tag">Your duo. Your set. One take.</p>
+    </div>
+    <div class="footer-col">
+      <h4 data-i18n="ft.studio">Studio</h4>
+      <a href="#create" data-i18n="ft.l1">Video studio</a>
+      <a href="#examples" data-i18n="ft.l2">Full examples</a>
+      <a href="#pricing" data-i18n="ft.l3">Pricing &amp; credits</a>
+      <a href="#create" data-i18n="ft.l4">My renders</a>
+    </div>
+    <div class="footer-col">
+      <h4 data-i18n="ft.details">The details</h4>
+      <a href="#guides" data-i18n="ft.l5">Guides &amp; notes</a>
+      <a href="#how" data-i18n="ft.l6">Photo &amp; video guide</a>
+      <a href="#faq" data-i18n="ft.l7">Privacy</a>
+      <a href="#faq" data-i18n="ft.l8">Terms</a>
+    </div>
+  </div>
+  <div class="container footer-base">
+    <p class="fine" data-i18n="ft.base">漏 2026 DuoStage 鈥?a static demo site. Not affiliated with any music artist or label.</p>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="js/i18n.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
+

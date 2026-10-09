@@ -1,0 +1,11 @@
+# runtime state — never commit
+server/data.json
+server/data.json.tmp
+server/uploads/
+server/server.log
+server/server.pid
+server/*.log
+workers/wrangler-dev.log
+workers/.wrangler/
+node_modules/
+.DS_Store
