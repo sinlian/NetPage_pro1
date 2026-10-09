@@ -61,6 +61,13 @@ node selftest.mjs                         # 期望 56 passed, 0 failed
 `server/` 为遗留 Node 本地镜像（离线 file:// 演示与历史自测保留），**部署运行时以 workers/ 为准**；
 两者路由契约一致，前端零改动（相对 `/api/*` + 双适配器）。改静态文件后跑 `node scripts/sync-public.mjs`。
 
+部署状态（2026-10-09）：代码已推送 `https://github.com/sinlian/NetPage_pro1`（main, f47d523）；
+`wrangler deploy --dry-run` 校验通过（20 assets / 24.54 KiB / KV+R2+Assets 绑定齐全）。
+账号部署待凭据：dashboard 有人机质询且隔离浏览器无会话、wrangler 未登录、环境无 API token。
+三选一完成：① 给我 API token（Workers/KV/R2 编辑 scope）→ 我建绑定+secret+deploy；
+② 有浏览器的机器 `wrangler login` 后 `wrangler deploy`；
+③ dashboard → Workers & Pages → Import from GitHub → 本仓库（root=workers，assets 已提交无需 build 命令）→ UI 挂 KV/R2 + 设 DS_SECRET。
+
 checkout-dev.html 开发结账页（模拟 Stripe 托管页，仅演示，noindex）
 dev-jobs.html   开发任务控制页（扮演 vendor 回调：success/failed/rejected，仅演示，noindex）
 dev-inbox.html    开发收件箱（仅演示，noindex，上线前移除）
