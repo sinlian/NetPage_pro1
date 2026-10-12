@@ -389,6 +389,21 @@ h3 { font-size: 1.12rem; font-weight: 700; }
 .inbox-state.used { color: var(--faint); }
 .inbox-state.expired { color: var(--accent-soft); }
 
+/* ---------- library (creations) & legal pages ---------- */
+.lib-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.lib-card { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+.lib-thumb { background: #000; }
+.lib-thumb svg { width: 100%; height: auto; }
+.lib-thumb-empty { min-height: 120px; display: flex; align-items: center; justify-content: center; background: var(--panel-2); }
+.lib-body { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+.lib-meta { display: flex; flex-direction: column; gap: 5px; }
+.lib-spec { color: var(--muted); }
+.lib-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; }
+.legal-card h2 { font-size: 1.05rem; margin: 22px 0 6px; }
+.legal-card p { color: var(--muted); font-size: .93rem; }
+@media (max-width: 1020px) { .lib-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 720px) { .lib-grid { grid-template-columns: 1fr; } }
+
 /* ---------- job list (My renders pane) ---------- */
 .stage-jobs { min-height: 340px; padding: 18px; background: var(--panel-2); border: 1px dashed var(--line); }
 .stage-empty-msg { color: var(--faint); text-align: center; padding: 60px 0; }

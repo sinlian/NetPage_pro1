@@ -41,7 +41,7 @@ workers/
   src/jobs.js       任务状态机 + 僵尸清扫（Cron 触发）
   src/adapters.js   dev 邮件（dev_inbox）/ dev 支付（checkout-dev）适配器
   public/           静态站副本（scripts/sync-public.mjs 同步；_headers 控缓存）
-  selftest.mjs      56 项断言（纯 Node，内存 KV/R2/Assets shim 跑真实 handler）
+  selftest.mjs      83 项断言（纯 Node，内存 KV/R2/Assets shim 跑真实 handler；含桩 IdP 离线验证 Google OAuth 全链路）
 scripts/sync-public.mjs   仓库根静态文件 → workers/public/
 ```
 
@@ -60,6 +60,18 @@ node selftest.mjs                         # 期望 56 passed, 0 failed
 
 `server/` 为遗留 Node 本地镜像（离线 file:// 演示与历史自测保留），**部署运行时以 workers/ 为准**；
 两者路由契约一致，前端零改动（相对 `/api/*` + 双适配器）。改静态文件后跑 `node scripts/sync-public.mjs`。
+
+### 真 Google 登录启用清单（人工步骤，代码侧已就绪）
+
+1. console.cloud.google.com → 新建/选择项目 → 「OAuth 同意屏幕」：External + 应用名 + 支持邮箱
+2. 「凭据」→ 创建 OAuth 客户端 ID（类型：Web 应用），授权重定向 URI 填：
+   - 生产：`https://<你的-worker-域名>/api/auth/google/callback`
+   - 本地：`http://127.0.0.1:8787/api/auth/google/callback`
+3. 把 Client ID / Client Secret 配进 Workers：
+   `wrangler secret put GOOGLE_CLIENT_ID`、`wrangler secret put GOOGLE_CLIENT_SECRET`
+   （或 dashboard → Worker → Settings → Variables）
+4. 完成：登录页 Google 按钮即走真 OIDC（授权码 + state CSRF + id_token RS256/JWKS 验签 iss/aud/exp）；
+   未配置时按钮提示"尚未接入"，本地 file:// 模式仍走演示账户。
 
 部署状态（2026-10-09）：代码已推送 `https://github.com/sinlian/NetPage_pro1`（main, f47d523）；
 `wrangler deploy --dry-run` 校验通过（20 assets / 24.54 KiB / KV+R2+Assets 绑定齐全）。

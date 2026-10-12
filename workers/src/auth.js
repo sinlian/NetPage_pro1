@@ -63,7 +63,45 @@ export async function revokeSession(db, token) {
   await db.del("sessions", dot < 0 ? token : token.slice(0, dot));
 }
 
+/* ---- OAuth state (CSRF + return path), signed + TTL bound ---- */
+export async function createOAuthState(cfg, redirect) {
+  const nonce = hex(crypto.getRandomValues(new Uint8Array(8)));
+  const exp = Date.now() + 10 * 60 * 1000;
+  const payload = nonce + "." + exp + "." + encodeURIComponent(redirect || "/");
+  const sig = await hmacSign(cfg.secret, "oauth-state|" + payload);
+  return payload + "." + sig;
+}
+
+export async function verifyOAuthState(cfg, state) {
+  if (!state || typeof state !== "string") return null;
+  const i = state.lastIndexOf(".");
+  if (i < 0) return null;
+  const payload = state.slice(0, i);
+  const sig = state.slice(i + 1);
+  const expect = await hmacSign(cfg.secret, "oauth-state|" + payload);
+  if (!timingSafeEqualStr(sig, expect)) return null;
+  const parts = payload.split(".");
+  if (parts.length < 3) return null;
+  const exp = Number(parts[1]);
+  if (!exp || Date.now() > exp) return null;
+  return { redirect: decodeURIComponent(parts.slice(2).join(".")) || "/" };
+}
+
 export function bearerToken(request) {
   const h = request.headers.get("authorization") || "";
   return h.startsWith("Bearer ") ? h.slice(7) : null;
+}
+
+/* ---- signed download urls (short-lived, bearer-free) ---- */
+export async function signDownload(cfg, renderId, ttlMs) {
+  const exp = Date.now() + ttlMs;
+  const sig = await hmacSign(cfg.secret, "dl|" + renderId + "|" + exp);
+  return { exp, sig };
+}
+
+export async function verifyDownloadSig(cfg, renderId, exp, sig) {
+  if (!exp || !sig) return false;
+  if (Date.now() > Number(exp)) return false;
+  const expect = await hmacSign(cfg.secret, "dl|" + renderId + "|" + exp);
+  return timingSafeEqualStr(String(sig), expect);
 }

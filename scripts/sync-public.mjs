@@ -10,7 +10,7 @@ const pub = join(root, "workers", "public");
 
 const FILES = [
   "index.html", "login.html", "account.html", "checkout-dev.html",
-  "dev-inbox.html", "dev-jobs.html",
+  "dev-inbox.html", "dev-jobs.html", "creations.html", "privacy.html", "terms.html",
   "css/style.css",
   "assets/sample-output.svg",
 ];

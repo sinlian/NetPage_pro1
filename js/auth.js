@@ -23,6 +23,7 @@
   var LINK_TTL = 15 * 60 * 1000;
 
   var mode = null;
+  var googleOn = false;
   var ensurePromise = null;
   var userCache = read(CACHE_KEY, null);
   var sessionToken = read(TOKEN_KEY, null);
@@ -137,7 +138,7 @@
         var timer = setTimeout(function () { resolve("local"); }, 1500);
         fetch("/api/health", { cache: "no-store" })
           .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error("health")); })
-          .then(function (j) { clearTimeout(timer); resolve(j.ok ? "http" : "local"); })
+          .then(function (j) { clearTimeout(timer); googleOn = !!j.google; resolve(j.ok ? "http" : "local"); })
           .catch(function () { clearTimeout(timer); resolve("local"); });
       }).then(function (m) {
         mode = m;
@@ -156,6 +157,21 @@
     requestMagicLink: function (email) { return adapter().requestMagicLink(email); },
     consumeMagicLink: function (token) { return adapter().consumeMagicLink(token); },
     signInGoogleDemo: function () { return adapter().signInGoogleDemo(); },
+
+    /* real Google OAuth: full-page redirect to the worker's consent redirect */
+    googleConfigured: function () { return mode === "http" && googleOn; },
+    startGoogle: function () {
+      location.href = "/api/auth/google?redirect=" + encodeURIComponent("/");
+    },
+    /* adopt a session token handed back via #google-token= after the callback */
+    adoptSession: function (token) {
+      setSession(token, null);
+      return api("/api/auth/me").then(function (r) {
+        if (r.status === 200 && r.body.user) { setSession(token, r.body.user); return r.body.user; }
+        setSession(null, null);
+        return null;
+      });
+    },
     signOut: function () { return adapter().signOut(); },
     listMagicLinks: function () { return adapter().listMagicLinks(); },
 
@@ -192,6 +208,20 @@
     jobs: function () {
       if (mode !== "http") return Promise.resolve([]);
       return api("/api/jobs").then(function (r) { return r.status === 200 ? r.body.jobs : []; });
+    },
+    renders: function () {
+      if (mode !== "http") return Promise.resolve([]);
+      return api("/api/renders").then(function (r) { return r.status === 200 ? r.body.renders : []; });
+    },
+    deleteRender: function (id) {
+      if (mode !== "http") return Promise.resolve(false);
+      return api("/api/renders/" + encodeURIComponent(id), { method: "DELETE" })
+        .then(function (r) { return r.status === 200; });
+    },
+    deletionRequest: function (scope) {
+      if (mode !== "http") return Promise.resolve({ ok: false, error: "local" });
+      return api("/api/deletion-request", { method: "POST", body: JSON.stringify({ scope: scope }) })
+        .then(function (r) { return r.status === 200 ? r.body : { ok: false, error: (r.body && r.body.error) || "failed" }; });
     },
 
     /* refresh the header balance chip from the server */

@@ -13,6 +13,7 @@ export function createMemoryBucket() {
   return {
     async put(key, body, opts) { map.set(key, { body, opts }); },
     async get(key) { return map.has(key) ? map.get(key) : null; },
+    async delete(key) { map.delete(key); },
     _size() { return map.size; },
   };
 }

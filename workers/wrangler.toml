@@ -28,4 +28,8 @@ bucket_name = "duostage-uploads"
 
 [vars]
 DS_DEV_ENDPOINTS = "on"
+# Google OAuth client id (public value; from Cloud Console 2026-10-12)
+GOOGLE_CLIENT_ID = "7865558902037-g5sm4rg6gqq1u0di0ci9p897kv40uu7n.apps.googleusercontent.com"
+# GOOGLE_CLIENT_SECRET must be set via `wrangler secret put GOOGLE_CLIENT_SECRET`
+# or dashboard -> Worker -> Settings -> Variables and Secrets. Never commit it.
 # DS_SECRET must be set via `wrangler secret put DS_SECRET` in production

@@ -6,6 +6,7 @@ server/server.log
 server/server.pid
 server/*.log
 workers/wrangler-dev.log
+workers/st.log
 workers/.wrangler/
 node_modules/
 .DS_Store

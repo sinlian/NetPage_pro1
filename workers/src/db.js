@@ -3,7 +3,7 @@
    module, so swapping storage later means rewriting this file only.
    createMemoryKv() provides the same surface for the Node selftest. */
 
-const TABLES = ["users", "magic_links", "sessions", "dev_inbox", "orders", "credit_ledger", "jobs", "uploads", "renders"];
+const TABLES = ["users", "magic_links", "sessions", "dev_inbox", "orders", "credit_ledger", "jobs", "uploads", "renders", "deletion_requests"];
 
 export function createKvDb(kv) {
   async function all(table) {

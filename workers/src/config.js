@@ -5,6 +5,13 @@ export function loadConfig(env = {}) {
     sessionTtlMs: 1000 * 60 * 60 * 24 * 7,
     linkTtlMs: 15 * 60 * 1000,
     devEndpoints: env.DS_DEV_ENDPOINTS !== "off",
+    /* Google OAuth — set via wrangler secret / dashboard vars; absent = 501 */
+    googleClientId: env.GOOGLE_CLIENT_ID || "",
+    googleClientSecret: env.GOOGLE_CLIENT_SECRET || "",
+    /* overridable for offline tests */
+    googleAuthUrl: env.GOOGLE_AUTH_URL || "https://accounts.google.com/o/oauth2/v2/auth",
+    googleTokenUrl: env.GOOGLE_TOKEN_URL || "https://oauth2.googleapis.com/token",
+    googleJwksUrl: env.GOOGLE_JWKS_URL || "https://www.googleapis.com/oauth2/v3/certs",
     packs: {
       single:  { usd: 4.99,  credits: 240 },
       starter: { usd: 9.90,  credits: 480 },

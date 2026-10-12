@@ -191,6 +191,7 @@
     if (!window.Auth || Auth.mode() !== "http") return;
     Auth.jobs().then(function (list) {
       renderJobList(list);
+      if (Auth.refreshBalanceChip) Auth.refreshBalanceChip();
       var active = list.some(function (x) { return x.status === "pending" || x.status === "running"; });
       clearTimeout(jobPollTimer);
       if (active && auto !== false) jobPollTimer = setTimeout(function () { refreshJobs(true); }, 2000);

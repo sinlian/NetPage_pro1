@@ -11,6 +11,7 @@ import { putObject } from "./r2.js";
 import * as auth from "./auth.js";
 import * as credits from "./credits.js";
 import * as jobs from "./jobs.js";
+import * as google from "./google.js";
 import { createDevInboxMailer, createDevPayAdapter } from "./adapters.js";
 
 const EMAIL_RE = /^\S+@\S+\.\S+$/;
@@ -59,7 +60,7 @@ export async function handleApi(request, env, cfg, db, url, pathname) {
 
   /* --- health --- */
   if (pathname === "/api/health" && request.method === "GET") {
-    return json(200, { ok: true, mode: "workers", mailer: mailer.name, pay: pay.name });
+    return json(200, { ok: true, mode: "workers", mailer: mailer.name, pay: pay.name, google: !!cfg.googleClientId });
   }
 
   /* --- pricing config (single source of truth for the calculator) --- */
@@ -208,10 +209,51 @@ export async function handleApi(request, env, cfg, db, url, pathname) {
     return json(200, { ok: true, token, user: { email: user.email, method: user.method, since: user.created } });
   }
 
-  /* --- google oauth placeholder (client registration pending) --- */
-  if (pathname === "/api/auth/google" && request.method === "POST") {
-    return json(501, { ok: false, error: "oauth-not-configured" });
+  /* --- google oauth: start (302 to consent) --- */
+  if (pathname === "/api/auth/google" && request.method === "GET") {
+    if (!cfg.googleClientId) return json(501, { ok: false, error: "oauth-not-configured" });
+    const redirect = url.searchParams.get("redirect") || "/";
+    const state = await auth.createOAuthState(cfg, redirect);
+    const redirectUri = new URL("/api/auth/google/callback", request.url).href;
+    return Response.redirect(google.buildAuthUrl(cfg, state, redirectUri), 302);
   }
+
+  /* --- google oauth: callback (code exchange + id_token verification) --- */
+  if (pathname === "/api/auth/google/callback" && request.method === "GET") {
+    if (!cfg.googleClientId) return json(501, { ok: false, error: "oauth-not-configured" });
+    const code = url.searchParams.get("code");
+    const state = url.searchParams.get("state");
+    const err = url.searchParams.get("error");
+    if (err) return Response.redirect("/login.html?oauth=" + encodeURIComponent(err), 302);
+    const st = await auth.verifyOAuthState(cfg, state);
+    if (!st) return json(400, { ok: false, error: "bad-state" });
+    if (!code) return json(400, { ok: false, error: "missing-code" });
+    const redirectUri = new URL("/api/auth/google/callback", request.url).href;
+    const ex = await google.exchangeCode(cfg, code, redirectUri);
+    if (!ex.ok) return json(400, { ok: false, error: ex.error });
+    const vt = await google.verifyIdToken(cfg, ex.idToken);
+    if (!vt.ok) return json(400, { ok: false, error: "id-token-" + vt.error });
+    const email = String(vt.claims.email || "").toLowerCase();
+    if (!EMAIL_RE.test(email)) return json(400, { ok: false, error: "bad-email" });
+    let user = await db.find("users", (u) => u.email === email);
+    if (!user) {
+      user = { id: "u_" + auth.createMagicToken().slice(0, 16), email, method: "google", google_sub: vt.claims.sub || null, created: Date.now() };
+      await db.set("users", user.id, user);
+    } else {
+      user.method = "google";
+      user.google_sub = vt.claims.sub || user.google_sub || null;
+      await db.set("users", user.id, user);
+    }
+    const token = await auth.issueSession(db, cfg, user.id);
+    /* hand the session to the SPA via a one-shot redirect fragment */
+    const target = new URL(st.redirect.startsWith("/") ? st.redirect : "/", request.url);
+    target.pathname = "/login.html";
+    target.search = "";
+    target.hash = "google-token=" + encodeURIComponent(token);
+    return Response.redirect(target.href, 302);
+  }
+
+  /* --- google oauth placeholder removed: real flow above --- */
 
   /* --- session-scoped routes --- */
   if (pathname === "/api/auth/me" || pathname === "/api/auth/logout") {
@@ -224,6 +266,106 @@ export async function handleApi(request, env, cfg, db, url, pathname) {
     const user = await db.get("users", session.userId);
     if (!user) return json(401, { ok: false, error: "unauthorized" });
     return json(200, { ok: true, user: { email: user.email, method: user.method, since: user.created } });
+  }
+
+  /* --- renders library (bearer): list with short-lived signed download urls --- */
+  if (pathname === "/api/renders" && request.method === "GET") {
+    const su = await sessionUser();
+    if (!su) return json(401, { ok: false, error: "unauthorized" });
+    const jobList = await jobs.listJobsWithRenders(db, su.user.id);
+    const out = [];
+    for (const j of jobList) {
+      if (!j.render) continue;
+      const { exp, sig } = await auth.signDownload(cfg, j.render.id || j.render, 15 * 60 * 1000);
+      out.push({
+        job_id: j.id, status: j.status, error_code: j.error_code,
+        model: j.model, duration_s: j.duration_s, quality: j.quality, aspect: j.aspect,
+        cost: j.cost, created: j.created,
+        render: Object.assign({}, j.render, {
+          download_url: "/api/downloads/" + (j.render.id || j.render) + "?exp=" + exp + "&sig=" + sig,
+        }),
+      });
+    }
+    return json(200, { ok: true, renders: out });
+  }
+
+  /* --- signed download (no bearer; sig+exp authorize) --- */
+  const dlMatch = pathname.match(/^\/api\/downloads\/([A-Za-z0-9_-]+)$/);
+  if (dlMatch && request.method === "GET") {
+    const rid = dlMatch[1];
+    const exp = url.searchParams.get("exp");
+    const sig = url.searchParams.get("sig");
+    if (!(await auth.verifyDownloadSig(cfg, rid, exp, sig))) return json(403, { ok: false, error: "bad-signature" });
+    const render = await db.get("renders", rid);
+    if (!render) return json(404, { ok: false, error: "unknown-render" });
+    if (render.expires && Date.now() > render.expires) return json(410, { ok: false, error: "expired" });
+    if (render.r2_key && env.DS_R2) {
+      const obj = await env.DS_R2.get(render.r2_key);
+      if (!obj) return json(404, { ok: false, error: "missing-object" });
+      return new Response(obj.body, {
+        headers: {
+          "content-type": obj.httpMetadata?.contentType || "video/mp4",
+          "content-disposition": 'attachment; filename="' + rid + '.mp4"',
+          "cache-control": "private, no-store",
+        },
+      });
+    }
+    /* dev stand-in: renders point at static assets */
+    return Response.redirect(new URL(render.output_url, request.url).href, 302);
+  }
+
+  /* --- delete a render (bearer, owner) --- */
+  const delMatch = pathname.match(/^\/api\/renders\/([A-Za-z0-9_-]+)$/);
+  if (delMatch && request.method === "DELETE") {
+    const su = await sessionUser();
+    if (!su) return json(401, { ok: false, error: "unauthorized" });
+    const render = await db.get("renders", delMatch[1]);
+    if (!render || render.userId !== su.user.id) return json(404, { ok: false, error: "unknown-render" });
+    if (render.r2_key && env.DS_R2) { try { await env.DS_R2.delete(render.r2_key); } catch (e) { /* ignore */ } }
+    await db.del("renders", render.id);
+    const job = await db.get("jobs", render.job_id);
+    if (job && job.render === render.id) { job.render = null; await db.set("jobs", job.id, job); }
+    return json(200, { ok: true });
+  }
+
+  /* --- deletion requests (privacy): uploads / renders / account --- */
+  if (pathname === "/api/deletion-request" && request.method === "POST") {
+    const su = await sessionUser();
+    if (!su) return json(401, { ok: false, error: "unauthorized" });
+    let body;
+    try { body = await readJsonBody(request); } catch (e) { return json(400, { ok: false, error: "bad-json" }); }
+    const scope = ["uploads", "renders", "account"].includes(body.scope) ? body.scope : null;
+    if (!scope) return json(400, { ok: false, error: "bad-scope" });
+    let removed = 0;
+    if (scope === "uploads" || scope === "account") {
+      for (const u of await db.all("uploads")) {
+        if (u.userId !== su.user.id) continue;
+        if (env.DS_R2 && u.status === "ready") { try { await env.DS_R2.delete(u.id + "." + u.ext); } catch (e) { /* ignore */ } }
+        await db.del("uploads", u.id);
+        removed++;
+      }
+    }
+    if (scope === "renders" || scope === "account") {
+      for (const r of await db.all("renders")) {
+        if (r.userId !== su.user.id) continue;
+        if (env.DS_R2 && r.r2_key) { try { await env.DS_R2.delete(r.r2_key); } catch (e) { /* ignore */ } }
+        await db.del("renders", r.id);
+        removed++;
+      }
+      for (const j of await db.all("jobs")) {
+        if (j.userId === su.user.id && j.render) { j.render = null; await db.set("jobs", j.id, j); }
+      }
+    }
+    if (scope === "account") {
+      for (const s of await db.all("sessions")) if (s.userId === su.user.id) await db.del("sessions", s.id);
+      for (const l of await db.all("credit_ledger")) if (l.userId === su.user.id) await db.del("credit_ledger", l.id);
+      for (const j of await db.all("jobs")) if (j.userId === su.user.id) await db.del("jobs", j.id);
+      await db.del("users", su.user.id);
+    }
+    await db.set("deletion_requests", "d_" + auth.createMagicToken().slice(0, 12), {
+      id: "d_" + Date.now(), userId: su.user.id, scope, removed, created: Date.now(),
+    });
+    return json(200, { ok: true, scope, removed });
   }
 
   /* --- dev-only order lookup (for the simulated checkout page) --- */
@@ -275,11 +417,13 @@ export default {
     return new Response("not found", { status: 404 });
   },
 
-  /* Cron Trigger: fail + refund zombie jobs past cfg.jobTimeoutMs */
+  /* Cron Trigger: fail + refund zombie jobs; purge expired renders */
   async scheduled(event, env, ctx) {
     const cfg = loadConfig(env);
     const db = createKvDb(env.DS_KV);
     const swept = await jobs.sweepJobs(db, cfg);
     if (swept) console.log("[duostage] swept zombie jobs:", swept);
+    const purged = await jobs.sweepRenders(db, cfg, Date.now(), env.DS_R2);
+    if (purged) console.log("[duostage] purged expired renders:", purged);
   },
 };

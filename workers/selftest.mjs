@@ -72,7 +72,7 @@ let token = null;
   check("me ok", me.status === 200 && me.body.user.email === "ada@example.com");
   const noauth = await api("/api/auth/me");
   check("me unauthorized", noauth.status === 401);
-  const goog = await jpost("/api/auth/google", {});
+  const goog = await api("/api/auth/google");
   check("google 501", goog.status === 501);
 }
 const B = { authorization: "Bearer " + token };
@@ -212,6 +212,165 @@ let photo1 = null, photo2 = null;
 {
   const nf = await api("/api/nope");
   check("api 404", nf.status === 404);
+}
+
+/* ---- Phase 4: library, signed downloads, deletion, render expiry ---- */
+{
+  /* re-login (session was revoked above) */
+  await jpost("/api/auth/magic-link", { email: "lib@example.com" });
+  const inbox = await api("/api/dev/inbox");
+  const link = inbox.body.items.find((i) => i.email === "lib@example.com");
+  const cons = await jpost("/api/auth/consume", { token: link.id });
+  const LB = { authorization: "Bearer " + cons.body.token };
+  /* create uploads */
+  const ps = await jpost("/api/uploads/presign", { mime: "image/png", size: 4, slot: 1 }, LB);
+  await api(ps.body.putUrl, { method: "PUT", body: new Uint8Array([1, 2, 3, 4]) });
+  const ps2 = await jpost("/api/uploads/presign", { mime: "image/png", size: 4, slot: 2 }, LB);
+  await api(ps2.body.putUrl, { method: "PUT", body: new Uint8Array([4, 3, 2, 1]) });
+  /* grant credits via a paid order */
+  const co3 = await jpost("/api/checkout", { pack: "single" }, LB);
+  await jpost("/api/pay/confirm", { orderId: co3.body.orderId, outcome: "success" });
+  const jb = await jpost("/api/jobs", { model: "aurora", duration: 5, quality: "768", aspect: "9:16", photo1: ps.body.uploadId, photo2: ps2.body.uploadId }, LB);
+  check("lib job created", jb.status === 200);
+  const fin = await jpost("/api/dev/jobs/finish", { jobId: jb.body.jobId, outcome: "success" });
+  check("lib job finished", fin.status === 200 && fin.body.job.render);
+  const rid = fin.body.job.render;
+
+  /* library list with signed download url */
+  const lib = await api("/api/renders", { headers: LB });
+  check("renders list", lib.status === 200 && lib.body.renders.length === 1 && lib.body.renders[0].render.download_url.startsWith("/api/downloads/" + rid));
+  const dlUrl = lib.body.renders[0].render.download_url;
+
+  /* signed download: valid sig redirects; bad sig 403; expired 403 */
+  const dl = await worker.fetch(new Request(BASE + dlUrl), env, {});
+  check("signed download redirects", dl.status === 302);
+  const dlBad = await worker.fetch(new Request(BASE + "/api/downloads/" + rid + "?exp=9999999999999&sig=nope"), env, {});
+  check("bad sig 403", dlBad.status === 403);
+  const dlExp = await worker.fetch(new Request(BASE + "/api/downloads/" + rid + "?exp=1&sig=" + dlUrl.split("sig=")[1]), env, {});
+  check("expired sig 403", dlExp.status === 403);
+
+  /* render expiry sweep purges */
+  const rec = await env.DS_KV.get("t:renders:" + rid, "json");
+  rec.expires = Date.now() - 1000;
+  await env.DS_KV.put("t:renders:" + rid, JSON.stringify(rec));
+  await worker.scheduled({ scheduledTime: Date.now() }, env, {});
+  const gone = await env.DS_KV.get("t:renders:" + rid, "json");
+  check("expired render purged", gone === null);
+  const jobAfter = await env.DS_KV.get("t:jobs:" + jb.body.jobId, "json");
+  check("job render unlinked after purge", jobAfter.render === null);
+
+  /* deletion: create another render then delete via API (top up credits first) */
+  const co4 = await jpost("/api/checkout", { pack: "single" }, LB);
+  await jpost("/api/pay/confirm", { orderId: co4.body.orderId, outcome: "success" });
+  const jb2 = await jpost("/api/jobs", { model: "flow", duration: 5, quality: "768", aspect: "1:1", photo1: ps.body.uploadId, photo2: ps2.body.uploadId }, LB);
+  check("lib job2 created", jb2.status === 200);
+  const fin2 = await jpost("/api/dev/jobs/finish", { jobId: jb2.body.jobId, outcome: "success" });
+  const rid2 = fin2.body.job.render;
+  const del = await api("/api/renders/" + rid2, { method: "DELETE", headers: LB });
+  check("render delete ok", del.status === 200);
+  check("render gone", (await env.DS_KV.get("t:renders:" + rid2, "json")) === null);
+  const delOther = await api("/api/renders/" + rid2, { method: "DELETE", headers: LB });
+  check("render delete twice 404", delOther.status === 404);
+
+  /* deletion-request: uploads scope removes upload rows + r2 objects */
+  const dr = await jpost("/api/deletion-request", { scope: "uploads" }, LB);
+  check("deletion-request uploads", dr.status === 200 && dr.body.removed === 2);
+  check("uploads rows gone", (await env.DS_KV.get("t:uploads:" + ps.body.uploadId, "json")) === null);
+  check("r2 objects of requester gone", (await env.DS_R2.get(ps.body.uploadId + ".png")) === null && (await env.DS_R2.get(ps2.body.uploadId + ".png")) === null);
+  check("other users' r2 objects untouched", env.DS_R2._size() === 2);
+  const drBad = await jpost("/api/deletion-request", { scope: "nope" }, LB);
+  check("deletion-request bad scope", drBad.status === 400);
+  /* account scope wipes user */
+  const drAcc = await jpost("/api/deletion-request", { scope: "account" }, LB);
+  check("deletion-request account", drAcc.status === 200);
+  const meGone = await api("/api/auth/me", { headers: LB });
+  check("session dead after account deletion", meGone.status === 401);
+}
+
+/* ---- Phase 5: Google OAuth flow against a local stub IdP ---- */
+{
+  const http = await import("node:http");
+  const kp = await crypto.subtle.generateKey({ name: "RSASSA-PKCS1-v1_5", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" }, true, ["sign", "verify"]);
+  const kpBad = await crypto.subtle.generateKey({ name: "RSASSA-PKCS1-v1_5", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" }, false, ["sign"]);
+  const pubJwk = await crypto.subtle.exportKey("jwk", kp.publicKey);
+  pubJwk.kid = "test-kid-1";
+  pubJwk.alg = "RS256";
+  pubJwk.use = "sig";
+
+  const b64u = (bytes) => { let bin = ""; for (const b of bytes) bin += String.fromCharCode(b); return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); };
+  const b64uStr = (s) => btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  async function makeIdToken(key, claims) {
+    const h = b64uStr(JSON.stringify({ alg: "RS256", typ: "JWT", kid: "test-kid-1" }));
+    const c = b64uStr(JSON.stringify(claims));
+    const sig = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, new TextEncoder().encode(h + "." + c));
+    return h + "." + c + "." + b64u(new Uint8Array(sig));
+  }
+  const goodClaims = { iss: "https://accounts.google.com", aud: "test-client", exp: Math.floor(Date.now() / 1000) + 600, email: "Goo.Gle@example.com", sub: "g-sub-1" };
+
+  const stub = http.createServer((req, res) => {
+    const u = new URL(req.url, "http://stub");
+    if (u.pathname === "/certs") { res.setHeader("content-type", "application/json"); res.end(JSON.stringify({ keys: [pubJwk] })); return; }
+    if (u.pathname === "/token") {
+      let raw = "";
+      req.on("data", (c) => (raw += c));
+      req.on("end", async () => {
+        const form = new URLSearchParams(raw);
+        const idToken = form.get("code") === "bad-sig"
+          ? await makeIdToken(kpBad.privateKey, goodClaims)
+          : await makeIdToken(kp.privateKey, goodClaims);
+        res.setHeader("content-type", "application/json");
+        res.end(JSON.stringify({ access_token: "at", id_token: idToken }));
+      });
+      return;
+    }
+    res.statusCode = 404; res.end();
+  });
+  await new Promise((r) => stub.listen(0, "127.0.0.1", r));
+  const stubBase = "http://127.0.0.1:" + stub.address().port;
+
+  /* not configured -> 501 */
+  let g = await api("/api/auth/google");
+  check("google 501 when unconfigured", g.status === 501);
+
+  /* configure via env (loadConfig reads per request) */
+  env.GOOGLE_CLIENT_ID = "test-client";
+  env.GOOGLE_CLIENT_SECRET = "test-secret";
+  env.GOOGLE_AUTH_URL = stubBase + "/auth";
+  env.GOOGLE_TOKEN_URL = stubBase + "/token";
+  env.GOOGLE_JWKS_URL = stubBase + "/certs";
+
+  g = await worker.fetch(new Request(BASE + "/api/auth/google?redirect=/creations.html"), env, {});
+  check("google start redirects to IdP", g.status === 302 && g.headers.get("location").startsWith(stubBase + "/auth?"));
+  const loc = new URL(g.headers.get("location"));
+  check("auth url params", loc.searchParams.get("client_id") === "test-client" && loc.searchParams.get("scope") === "openid email profile" && !!loc.searchParams.get("state"));
+  const state = loc.searchParams.get("state");
+
+  g = await worker.fetch(new Request(BASE + "/api/auth/google/callback?code=abc&state=bogus"), env, {});
+  check("callback bad state 400", g.status === 400 && (await g.json()).error === "bad-state");
+
+  g = await worker.fetch(new Request(BASE + "/api/auth/google/callback?code=bad-sig&state=" + encodeURIComponent(state)), env, {});
+  const badSig = await g.json();
+  check("callback rejects bad id_token signature", g.status === 400 && badSig.error === "id-token-bad-signature");
+
+  g = await worker.fetch(new Request(BASE + "/api/auth/google/callback?code=abc&state=" + encodeURIComponent(state)), env, {});
+  check("callback success redirects with token", g.status === 302 && g.headers.get("location").includes("/login.html#google-token="));
+  const gtok = decodeURIComponent(g.headers.get("location").split("google-token=")[1]);
+  const me = await api("/api/auth/me", { headers: { authorization: "Bearer " + gtok } });
+  check("google session user", me.status === 200 && me.body.user.email === "goo.gle@example.com" && me.body.user.method === "google");
+
+  /* expired id_token rejected */
+  const expToken = await makeIdToken(kp.privateKey, Object.assign({}, goodClaims, { exp: Math.floor(Date.now() / 1000) - 10 }));
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = async (input, init) => {
+    const url = typeof input === "string" ? input : input.url;
+    if (url === stubBase + "/token") return new Response(JSON.stringify({ access_token: "at", id_token: expToken }), { headers: { "content-type": "application/json" } });
+    return origFetch(input, init);
+  };
+  const state2 = new URL((await worker.fetch(new Request(BASE + "/api/auth/google"), env, {})).headers.get("location")).searchParams.get("state");
+  g = await worker.fetch(new Request(BASE + "/api/auth/google/callback?code=abc&state=" + encodeURIComponent(state2)), env, {});
+  check("callback rejects expired id_token", g.status === 400 && (await g.json()).error === "id-token-expired");
+  globalThis.fetch = origFetch;
+  stub.close();
 }
 
 console.log(`\n${passed} passed, ${failures.length} failed`);

@@ -2,8 +2,10 @@
 (function () {
   "use strict";
   function t(key) { return window.DS ? DS.t(key) : key; }
+  var toastEl = null;
 
   document.addEventListener("DOMContentLoaded", function () {
+    toastEl = document.getElementById("toast");
     var gate = document.getElementById("needLogin");
     var card = document.getElementById("accountCard");
 
@@ -52,6 +54,31 @@
           });
         });
       }
+      function wireDel(id, scope) {
+        var b = document.getElementById(id);
+        if (!b) return;
+        b.addEventListener("click", function () {
+          if (!window.confirm(t("acct.delConfirm"))) return;
+          Auth.deletionRequest(scope).then(function (r) {
+            if (r.ok) {
+              toastEl.textContent = t("acct.delDone").replace("{n}", String(r.removed));
+              toastEl.classList.add("show");
+              setTimeout(function () { toastEl.classList.remove("show"); }, 2600);
+              if (scope === "renders" || scope === "uploads") {
+                Auth.credits().then(function (c) {
+                  var set = function (iid, val) { var el = document.getElementById(iid); if (el) el.textContent = val; };
+                  set("acctBalance", String(c.balance));
+                  set("acctReserved", String(c.reserved));
+                });
+              } else {
+                location.href = "index.html";
+              }
+            }
+          });
+        });
+      }
+      wireDel("delUploadsBtn", "uploads");
+      wireDel("delRendersBtn", "renders");
       if (window.DS) {
         DS.onLangChange(function () {
           set("acctMethod", t(s.method === "google" ? "acct.methodGoogle" : "acct.methodEmail"));

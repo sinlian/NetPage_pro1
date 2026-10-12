@@ -1,0 +1,10 @@
+[mail:dev] magic link for ada@example.com -> http://worker.internal/login.html?token=590b11c97a9698bce92767b27b34dca9c4d74ed0091fc28d
+[duostage] swept zombie jobs: 1
+[mail:dev] magic link for lib@example.com -> http://worker.internal/login.html?token=123a3c7f03ab39a4e21884a1ad41304d563882d92917ae8c
+[duostage] purged expired renders: 1
+DEBUG state: 38a7a40f6c9b6314.1791626898193.%2Fcreations.html.FejKnvk6niWkLgk9iWVRl8qUgJFlRRc0u1nSeySDrE0
+DEBUG direct verify: {"redirect":"/creations.html"}
+DEBUG badsig: 400 {"ok":false,"error":"id-token-bad-signature"}
+DEBUG ok: 302 http://worker.internal/login.html#google-token=d35688916e1eb17f7370dd7c0bec7bd4._8RHBdSNJ39lCJmxWcdsfgQGdXG2WLrdFe9LfgVLL3w
+
+83 passed, 0 failed

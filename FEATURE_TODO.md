@@ -47,7 +47,7 @@
 - 魔法链接：生成一次性 token → 发邮件 → 点击校验（过期/单次）→ 建会话；不存在则自动注册。
 - 会话：HttpOnly Cookie 或 JWT；头部登录态切换（Sign in → 头像/余额）。
 
-**运行时**：Cloudflare Workers（`workers/`：KV 仓储 + R2 上传 + Cron 僵尸清扫 + Static Assets；Web Crypto HMAC 会话）。`server/` 为遗留 Node 本地镜像（离线演示保留），部署以 workers/ 为准。Workers 自测 56/56；`wrangler dev`（miniflare）浏览器 E2E 全链路通过（magic link 登录→买包 240→devphotos 直传→生成 GENERATING…→dev 结算 SUCCEEDED→READY+Watch/Download→账本三笔余额归零）。代码已推送 GitHub（sinlian/NetPage_pro1, main, f47d523）；`wrangler deploy --dry-run` 通过；账号部署待凭据（dashboard 人机质询+无会话 / wrangler 未登录 / 无 API token），三选一：给 API token、本机 wrangler login、dashboard Import from GitHub。
+**运行时**：Cloudflare Workers（`workers/`：KV 仓储 + R2 上传 + Cron 僵尸清扫 + Static Assets；Web Crypto HMAC 会话）。`server/` 为遗留 Node 本地镜像（离线演示保留），部署以 workers/ 为准。Workers 自测 83/83；`wrangler dev`（miniflare）浏览器 E2E 全链路通过（magic link 登录→买包 240→devphotos 直传→生成 GENERATING…→dev 结算 SUCCEEDED→READY+Watch/Download→账本三笔余额归零）；Phase 4 后新增 creations/privacy/terms 页与签名下载/删除 API。代码已推送 GitHub（sinlian/NetPage_pro1, main, f47d523 起）；`wrangler deploy --dry-run` 通过；账号部署待凭据（dashboard 人机质询+无会话 / wrangler 未登录 / 无 API token），三选一：给 API token、本机 wrangler login、dashboard Import from GitHub。Google 真登录代码侧已就绪，待 Console 人工建 Client（README 清单）。
 
 **ToDo**
 - [x] 选定后端栈：Node 内置 `http` 零依赖骨架（`server/`）；DB 为 JSON 文件仓储层（`server/db.js`），生产换 SQLite/Postgres 只需重写该文件
@@ -55,7 +55,8 @@
 - [x] 邮件适配器接口：`DevInboxMailer` 已实现（生产换 Resend/SES，同接口注入）
 - [x] 前端双适配器：`js/auth.js` 自动探测后端（http 模式）/ 回落 localStorage（local 模式），调用方 API 不变
 - [x] 后端自测 `server/selftest.js` 17/17 通过（链接单次消费、篡改拒绝、登出吊销、路径穿越防护、JSON 持久化）
-- [ ] 注册 Google OAuth Client，配置回调与白名单（演示页已有 Google 按钮占位，http 模式返回 501 提示）
+- [x] Google OAuth 代码侧：同意页 302 + state CSRF（HMAC+10min）+ code 换 token + id_token 完整校验（RS256/JWKS 验签 + iss/aud/exp）+ 建会话 + 前端 `#google-token=` 接管；selftest 83/83 含桩 IdP 离线全链路（坏签/过期/bad-state 均拒绝）
+- [ ] 在 Google Cloud Console 注册 OAuth Client 并配重定向 URI + env `GOOGLE_CLIENT_ID/SECRET`（**人工步骤**，清单见 README「真 Google 登录启用清单」；未配置时按钮提示尚未接入）
 - [x] 魔法链接：token 生成、过期（15 分钟）与单次消费（demo：无邮件发送，链接落在 `dev-inbox.html`；生产接 Resend/SES）
 - [x] 登录页 UI（Google + 邮箱双入口）；`users` / `magic_links` / 会话为 localStorage 演示表（`js/auth.js`），生产迁移到 DB
 - [x] 账户设置页 `account.html`（邮箱、登录方式、注册时间、余额、退出；演示版）
@@ -81,7 +82,7 @@
 - 积分账本制：grant / reserve / consume / return 四类流水，余额 = 流水合计。
 - 计价配置表：model × duration × quality → credits（前端展示与后端扣费共用同一配置）。
 
-**运行时**：Cloudflare Workers（`workers/`：KV 仓储 + R2 上传 + Cron 僵尸清扫 + Static Assets；Web Crypto HMAC 会话）。`server/` 为遗留 Node 本地镜像（离线演示保留），部署以 workers/ 为准。Workers 自测 56/56；`wrangler dev`（miniflare）浏览器 E2E 全链路通过（magic link 登录→买包 240→devphotos 直传→生成 GENERATING…→dev 结算 SUCCEEDED→READY+Watch/Download→账本三笔余额归零）。代码已推送 GitHub（sinlian/NetPage_pro1, main, f47d523）；`wrangler deploy --dry-run` 通过；账号部署待凭据（dashboard 人机质询+无会话 / wrangler 未登录 / 无 API token），三选一：给 API token、本机 wrangler login、dashboard Import from GitHub。
+**运行时**：Cloudflare Workers（`workers/`：KV 仓储 + R2 上传 + Cron 僵尸清扫 + Static Assets；Web Crypto HMAC 会话）。`server/` 为遗留 Node 本地镜像（离线演示保留），部署以 workers/ 为准。Workers 自测 83/83；`wrangler dev`（miniflare）浏览器 E2E 全链路通过（magic link 登录→买包 240→devphotos 直传→生成 GENERATING…→dev 结算 SUCCEEDED→READY+Watch/Download→账本三笔余额归零）；Phase 4 后新增 creations/privacy/terms 页与签名下载/删除 API。代码已推送 GitHub（sinlian/NetPage_pro1, main, f47d523 起）；`wrangler deploy --dry-run` 通过；账号部署待凭据（dashboard 人机质询+无会话 / wrangler 未登录 / 无 API token），三选一：给 API token、本机 wrangler login、dashboard Import from GitHub。Google 真登录代码侧已就绪，待 Console 人工建 Client（README 清单）。
 
 **ToDo**
 - [ ] Stripe 账号、商品/价格配置（4 档包）——生产剩余；DevPay 适配器已就位，同接口换 Stripe Checkout + 真 webhook 验签
@@ -112,7 +113,7 @@
 - 上传走预签名 URL 直传对象存储；服务端二次校验类型/大小；可选人脸检测预检。
 - 内容审核：上传图与输出视频均需过审（vendor 自带或第三方）。
 
-**运行时**：Cloudflare Workers（`workers/`：KV 仓储 + R2 上传 + Cron 僵尸清扫 + Static Assets；Web Crypto HMAC 会话）。`server/` 为遗留 Node 本地镜像（离线演示保留），部署以 workers/ 为准。Workers 自测 56/56；`wrangler dev`（miniflare）浏览器 E2E 全链路通过（magic link 登录→买包 240→devphotos 直传→生成 GENERATING…→dev 结算 SUCCEEDED→READY+Watch/Download→账本三笔余额归零）。代码已推送 GitHub（sinlian/NetPage_pro1, main, f47d523）；`wrangler deploy --dry-run` 通过；账号部署待凭据（dashboard 人机质询+无会话 / wrangler 未登录 / 无 API token），三选一：给 API token、本机 wrangler login、dashboard Import from GitHub。
+**运行时**：Cloudflare Workers（`workers/`：KV 仓储 + R2 上传 + Cron 僵尸清扫 + Static Assets；Web Crypto HMAC 会话）。`server/` 为遗留 Node 本地镜像（离线演示保留），部署以 workers/ 为准。Workers 自测 83/83；`wrangler dev`（miniflare）浏览器 E2E 全链路通过（magic link 登录→买包 240→devphotos 直传→生成 GENERATING…→dev 结算 SUCCEEDED→READY+Watch/Download→账本三笔余额归零）；Phase 4 后新增 creations/privacy/terms 页与签名下载/删除 API。代码已推送 GitHub（sinlian/NetPage_pro1, main, f47d523 起）；`wrangler deploy --dry-run` 通过；账号部署待凭据（dashboard 人机质询+无会话 / wrangler 未登录 / 无 API token），三选一：给 API token、本机 wrangler login、dashboard Import from GitHub。Google 真登录代码侧已就绪，待 Console 人工建 Client（README 清单）。
 
 **ToDo**
 - [x] 调研三家 API（文档级核实，2026-10-09）：MiniMax 官方 `platform.minimax.io` 的 `/v2/video_generation` 原生支持 Reference Generation（prompt + 参考图/视频/音频），与"固定参考片段 + 双照片"模板流最匹配 → **生产首发候选**；Kling 3.0 Omni 有官方 kling.ai/dev（i2v / video omni 多参考）与 PiAPI/Magic Hour 等转售；Seedance 2.5 官方走 BytePlus ModelArk（待开通）或 Replicate（bytedance/seedance-2.5）。生产接入前需复核计费与区域可用性
@@ -137,16 +138,17 @@
 - `/creations` 列表：生成中/成功/失败状态、设置元数据（时长/画质/画幅/积分/日期）。
 - 预览 + 下载；重复下载不消耗积分；"Videos may become unavailable later"（存储有生命周期）。
 
-**运行时**：Cloudflare Workers（`workers/`：KV 仓储 + R2 上传 + Cron 僵尸清扫 + Static Assets；Web Crypto HMAC 会话）。`server/` 为遗留 Node 本地镜像（离线演示保留），部署以 workers/ 为准。Workers 自测 56/56；`wrangler dev`（miniflare）浏览器 E2E 全链路通过（magic link 登录→买包 240→devphotos 直传→生成 GENERATING…→dev 结算 SUCCEEDED→READY+Watch/Download→账本三笔余额归零）。代码已推送 GitHub（sinlian/NetPage_pro1, main, f47d523）；`wrangler deploy --dry-run` 通过；账号部署待凭据（dashboard 人机质询+无会话 / wrangler 未登录 / 无 API token），三选一：给 API token、本机 wrangler login、dashboard Import from GitHub。
+**运行时**：Cloudflare Workers（`workers/`：KV 仓储 + R2 上传 + Cron 僵尸清扫 + Static Assets；Web Crypto HMAC 会话）。`server/` 为遗留 Node 本地镜像（离线演示保留），部署以 workers/ 为准。Workers 自测 83/83；`wrangler dev`（miniflare）浏览器 E2E 全链路通过（magic link 登录→买包 240→devphotos 直传→生成 GENERATING…→dev 结算 SUCCEEDED→READY+Watch/Download→账本三笔余额归零）；Phase 4 后新增 creations/privacy/terms 页与签名下载/删除 API。代码已推送 GitHub（sinlian/NetPage_pro1, main, f47d523 起）；`wrangler deploy --dry-run` 通过；账号部署待凭据（dashboard 人机质询+无会话 / wrangler 未登录 / 无 API token），三选一：给 API token、本机 wrangler login、dashboard Import from GitHub。Google 真登录代码侧已就绪，待 Console 人工建 Client（README 清单）。
 
 **ToDo**
-- [ ] `renders` 表 + 对象存储（设置过期策略，如 30 天）
-- [ ] 库页面 UI：状态卡、空态（复用现有 `stage-empty` 样式）、失败卡含"积分已返还"说明
-- [ ] 签名下载 URL（短时效）
-- [ ] 到期清理任务 + 页面提示文案
-- [ ] 删除作品入口
+- [x] `renders` 表 + 对象存储（设置过期策略，如 30 天）（KV renders 行含 expires=30d；R2 存上传/生产成片；Cron `sweepRenders` 到期清除并解链 job）
+- [x] 库页面 UI：状态卡、空态（复用现有 `stage-empty` 样式）、失败卡含"积分已返还"说明（`creations.html` + `js/creations.js`：成功卡 Watch/签名下载/删除，失败卡复用 job.failed/job.rejected 话术，空态复用 pv.empty）
+- [x] 签名下载 URL（短时效）（`GET /api/renders` 返回 15 分钟 HMAC 签名 `download_url`；`GET /api/downloads/:id` 验签：坏签 403 / 过期 403 / R2 存在则流式 attachment，dev 回落 302 静态替身）
+- [x] 到期清理任务 + 页面提示文案（Cron 同时跑 sweepJobs + sweepRenders；terms s6 / privacy s3 披露 30 天保留期）
+- [x] 删除作品入口（库页删除按钮 + `DELETE /api/renders/:id` 属主校验；账户页"删除我的上传/成片"→ `POST /api/deletion-request`）
 
 **验收**：成功任务入库可预览可下载；失败任务显示返还说明；过期条目给出明确提示而非报错。
+> 进度（2026-10-10）：dev 级验收通过——selftest 75/75（含签名下载验签/过期、渲染删除、deletion-request 三 scope、sweepRenders 清理解链）；wrangler dev E2E：生成→结算→creations 页 1 卡 3 动作、签名 download href 正确；UI 删除按钮因 headless 无法过 confirm 弹窗，删除逻辑由 selftest 断言覆盖。
 
 ---
 
@@ -158,7 +160,7 @@
 - [x] Example / My renders 页签与空态隐藏（含 `[hidden]` 被 flex 覆盖的修复）
 - [x] toast 提示、移动端汉堡菜单、平滑锚点滚动
 
-**运行时**：Cloudflare Workers（`workers/`：KV 仓储 + R2 上传 + Cron 僵尸清扫 + Static Assets；Web Crypto HMAC 会话）。`server/` 为遗留 Node 本地镜像（离线演示保留），部署以 workers/ 为准。Workers 自测 56/56；`wrangler dev`（miniflare）浏览器 E2E 全链路通过（magic link 登录→买包 240→devphotos 直传→生成 GENERATING…→dev 结算 SUCCEEDED→READY+Watch/Download→账本三笔余额归零）。代码已推送 GitHub（sinlian/NetPage_pro1, main, f47d523）；`wrangler deploy --dry-run` 通过；账号部署待凭据（dashboard 人机质询+无会话 / wrangler 未登录 / 无 API token），三选一：给 API token、本机 wrangler login、dashboard Import from GitHub。
+**运行时**：Cloudflare Workers（`workers/`：KV 仓储 + R2 上传 + Cron 僵尸清扫 + Static Assets；Web Crypto HMAC 会话）。`server/` 为遗留 Node 本地镜像（离线演示保留），部署以 workers/ 为准。Workers 自测 83/83；`wrangler dev`（miniflare）浏览器 E2E 全链路通过（magic link 登录→买包 240→devphotos 直传→生成 GENERATING…→dev 结算 SUCCEEDED→READY+Watch/Download→账本三笔余额归零）；Phase 4 后新增 creations/privacy/terms 页与签名下载/删除 API。代码已推送 GitHub（sinlian/NetPage_pro1, main, f47d523 起）；`wrangler deploy --dry-run` 通过；账号部署待凭据（dashboard 人机质询+无会话 / wrangler 未登录 / 无 API token），三选一：给 API token、本机 wrangler login、dashboard Import from GitHub。Google 真登录代码侧已就绪，待 Console 人工建 Client（README 清单）。
 
 **ToDo**
 - [x] 上传改为预签名直传 + 服务端校验（保留本地预览体验）（dev 直传落地；生产换 S3）
@@ -178,7 +180,7 @@
 - [x] examples 对照卡（输入→输出，SVG 舞台示意，含左右互换组）
 - [x] "1 / 2" 分页徽标样式
 
-**运行时**：Cloudflare Workers（`workers/`：KV 仓储 + R2 上传 + Cron 僵尸清扫 + Static Assets；Web Crypto HMAC 会话）。`server/` 为遗留 Node 本地镜像（离线演示保留），部署以 workers/ 为准。Workers 自测 56/56；`wrangler dev`（miniflare）浏览器 E2E 全链路通过（magic link 登录→买包 240→devphotos 直传→生成 GENERATING…→dev 结算 SUCCEEDED→READY+Watch/Download→账本三笔余额归零）。代码已推送 GitHub（sinlian/NetPage_pro1, main, f47d523）；`wrangler deploy --dry-run` 通过；账号部署待凭据（dashboard 人机质询+无会话 / wrangler 未登录 / 无 API token），三选一：给 API token、本机 wrangler login、dashboard Import from GitHub。
+**运行时**：Cloudflare Workers（`workers/`：KV 仓储 + R2 上传 + Cron 僵尸清扫 + Static Assets；Web Crypto HMAC 会话）。`server/` 为遗留 Node 本地镜像（离线演示保留），部署以 workers/ 为准。Workers 自测 83/83；`wrangler dev`（miniflare）浏览器 E2E 全链路通过（magic link 登录→买包 240→devphotos 直传→生成 GENERATING…→dev 结算 SUCCEEDED→READY+Watch/Download→账本三笔余额归零）；Phase 4 后新增 creations/privacy/terms 页与签名下载/删除 API。代码已推送 GitHub（sinlian/NetPage_pro1, main, f47d523 起）；`wrangler deploy --dry-run` 通过；账号部署待凭据（dashboard 人机质询+无会话 / wrangler 未登录 / 无 API token），三选一：给 API token、本机 wrangler login、dashboard Import from GitHub。Google 真登录代码侧已就绪，待 Console 人工建 Client（README 清单）。
 
 **ToDo**
 - [ ] 真实示例视频托管与播放（替换示意 SVG/播放按钮 toast）
@@ -189,7 +191,7 @@
 
 ### M7 内容与 SEO（P2）
 
-**运行时**：Cloudflare Workers（`workers/`：KV 仓储 + R2 上传 + Cron 僵尸清扫 + Static Assets；Web Crypto HMAC 会话）。`server/` 为遗留 Node 本地镜像（离线演示保留），部署以 workers/ 为准。Workers 自测 56/56；`wrangler dev`（miniflare）浏览器 E2E 全链路通过（magic link 登录→买包 240→devphotos 直传→生成 GENERATING…→dev 结算 SUCCEEDED→READY+Watch/Download→账本三笔余额归零）。代码已推送 GitHub（sinlian/NetPage_pro1, main, f47d523）；`wrangler deploy --dry-run` 通过；账号部署待凭据（dashboard 人机质询+无会话 / wrangler 未登录 / 无 API token），三选一：给 API token、本机 wrangler login、dashboard Import from GitHub。
+**运行时**：Cloudflare Workers（`workers/`：KV 仓储 + R2 上传 + Cron 僵尸清扫 + Static Assets；Web Crypto HMAC 会话）。`server/` 为遗留 Node 本地镜像（离线演示保留），部署以 workers/ 为准。Workers 自测 83/83；`wrangler dev`（miniflare）浏览器 E2E 全链路通过（magic link 登录→买包 240→devphotos 直传→生成 GENERATING…→dev 结算 SUCCEEDED→READY+Watch/Download→账本三笔余额归零）；Phase 4 后新增 creations/privacy/terms 页与签名下载/删除 API。代码已推送 GitHub（sinlian/NetPage_pro1, main, f47d523 起）；`wrangler deploy --dry-run` 通过；账号部署待凭据（dashboard 人机质询+无会话 / wrangler 未登录 / 无 API token），三选一：给 API token、本机 wrangler login、dashboard Import from GitHub。Google 真登录代码侧已就绪，待 Console 人工建 Client（README 清单）。
 
 **ToDo**
 - [ ] 指南文章页 ×3（成本/照片/选购）+ 照片指南长页
@@ -203,24 +205,24 @@
 
 **参考站行为**：照片隐私与删除政策单独成页并提供删除入口；terms 明确"积分返还 ≠ 支付退款"。
 
-**运行时**：Cloudflare Workers（`workers/`：KV 仓储 + R2 上传 + Cron 僵尸清扫 + Static Assets；Web Crypto HMAC 会话）。`server/` 为遗留 Node 本地镜像（离线演示保留），部署以 workers/ 为准。Workers 自测 56/56；`wrangler dev`（miniflare）浏览器 E2E 全链路通过（magic link 登录→买包 240→devphotos 直传→生成 GENERATING…→dev 结算 SUCCEEDED→READY+Watch/Download→账本三笔余额归零）。代码已推送 GitHub（sinlian/NetPage_pro1, main, f47d523）；`wrangler deploy --dry-run` 通过；账号部署待凭据（dashboard 人机质询+无会话 / wrangler 未登录 / 无 API token），三选一：给 API token、本机 wrangler login、dashboard Import from GitHub。
+**运行时**：Cloudflare Workers（`workers/`：KV 仓储 + R2 上传 + Cron 僵尸清扫 + Static Assets；Web Crypto HMAC 会话）。`server/` 为遗留 Node 本地镜像（离线演示保留），部署以 workers/ 为准。Workers 自测 83/83；`wrangler dev`（miniflare）浏览器 E2E 全链路通过（magic link 登录→买包 240→devphotos 直传→生成 GENERATING…→dev 结算 SUCCEEDED→READY+Watch/Download→账本三笔余额归零）；Phase 4 后新增 creations/privacy/terms 页与签名下载/删除 API。代码已推送 GitHub（sinlian/NetPage_pro1, main, f47d523 起）；`wrangler deploy --dry-run` 通过；账号部署待凭据（dashboard 人机质询+无会话 / wrangler 未登录 / 无 API token），三选一：给 API token、本机 wrangler login、dashboard Import from GitHub。Google 真登录代码侧已就绪，待 Console 人工建 Client（README 清单）。
 
 **ToDo**
-- [ ] privacy / terms 页面（中英）
-- [ ] 上传与成片的保留期策略 + 用户主动删除 API
-- [ ] 肖像权/授权声明（上传即承诺有权使用）
-- [ ] 审核拒绝与申诉话术；未成年人保护声明
+- [x] privacy / terms 页面（中英）（`privacy.html` / `terms.html`，全 i18n 键；页脚与登录页链接已指向）
+- [x] 上传与成片的保留期策略 + 用户主动删除 API（30 天保留 + Cron 清除；`POST /api/deletion-request` scope=uploads/renders/account，账户页按钮接入）
+- [x] 肖像权/授权声明（上传即承诺有权使用）（terms s3：权利保证 + 出镜者同意 + 禁止违法/有害/非同意内容）
+- [x] 审核拒绝与申诉话术；未成年人保护声明（terms s4 审核拒绝返还点数 + 滥用终止；s5 未成年人 18+ / 监护人同意；申诉通道生产接客服前暂以条款话术披露）
 
 ---
 
 ### M9 通知与状态反馈（P2）
 
-**运行时**：Cloudflare Workers（`workers/`：KV 仓储 + R2 上传 + Cron 僵尸清扫 + Static Assets；Web Crypto HMAC 会话）。`server/` 为遗留 Node 本地镜像（离线演示保留），部署以 workers/ 为准。Workers 自测 56/56；`wrangler dev`（miniflare）浏览器 E2E 全链路通过（magic link 登录→买包 240→devphotos 直传→生成 GENERATING…→dev 结算 SUCCEEDED→READY+Watch/Download→账本三笔余额归零）。代码已推送 GitHub（sinlian/NetPage_pro1, main, f47d523）；`wrangler deploy --dry-run` 通过；账号部署待凭据（dashboard 人机质询+无会话 / wrangler 未登录 / 无 API token），三选一：给 API token、本机 wrangler login、dashboard Import from GitHub。
+**运行时**：Cloudflare Workers（`workers/`：KV 仓储 + R2 上传 + Cron 僵尸清扫 + Static Assets；Web Crypto HMAC 会话）。`server/` 为遗留 Node 本地镜像（离线演示保留），部署以 workers/ 为准。Workers 自测 83/83；`wrangler dev`（miniflare）浏览器 E2E 全链路通过（magic link 登录→买包 240→devphotos 直传→生成 GENERATING…→dev 结算 SUCCEEDED→READY+Watch/Download→账本三笔余额归零）；Phase 4 后新增 creations/privacy/terms 页与签名下载/删除 API。代码已推送 GitHub（sinlian/NetPage_pro1, main, f47d523 起）；`wrangler deploy --dry-run` 通过；账号部署待凭据（dashboard 人机质询+无会话 / wrangler 未登录 / 无 API token），三选一：给 API token、本机 wrangler login、dashboard Import from GitHub。Google 真登录代码侧已就绪，待 Console 人工建 Client（README 清单）。
 
 **ToDo**
 - [x] 站内 toast 基础组件（全站共用，含 i18n 文案）
 - [ ] 邮件通知：生成成功 / 失败返还 / 积分入账
-- [ ] 头部余额变化的即时刷新
+- [x] 头部余额变化的即时刷新（任务轮询 tick 同步调用 `Auth.refreshBalanceChip()`；页面加载时 i18n init 亦刷新）
 - [ ] （可选）Web Push 或回站提醒
 
 ---
@@ -232,7 +234,7 @@
 - [x] 动态文案跟随（计价 / toast / 按钮 / 文档标题 / `<html lang>`）
 - [x] 共享模块 `js/i18n.js`（多页复用 + 语言变更钩子 `DS.onLangChange`）
 
-**运行时**：Cloudflare Workers（`workers/`：KV 仓储 + R2 上传 + Cron 僵尸清扫 + Static Assets；Web Crypto HMAC 会话）。`server/` 为遗留 Node 本地镜像（离线演示保留），部署以 workers/ 为准。Workers 自测 56/56；`wrangler dev`（miniflare）浏览器 E2E 全链路通过（magic link 登录→买包 240→devphotos 直传→生成 GENERATING…→dev 结算 SUCCEEDED→READY+Watch/Download→账本三笔余额归零）。代码已推送 GitHub（sinlian/NetPage_pro1, main, f47d523）；`wrangler deploy --dry-run` 通过；账号部署待凭据（dashboard 人机质询+无会话 / wrangler 未登录 / 无 API token），三选一：给 API token、本机 wrangler login、dashboard Import from GitHub。
+**运行时**：Cloudflare Workers（`workers/`：KV 仓储 + R2 上传 + Cron 僵尸清扫 + Static Assets；Web Crypto HMAC 会话）。`server/` 为遗留 Node 本地镜像（离线演示保留），部署以 workers/ 为准。Workers 自测 83/83；`wrangler dev`（miniflare）浏览器 E2E 全链路通过（magic link 登录→买包 240→devphotos 直传→生成 GENERATING…→dev 结算 SUCCEEDED→READY+Watch/Download→账本三笔余额归零）；Phase 4 后新增 creations/privacy/terms 页与签名下载/删除 API。代码已推送 GitHub（sinlian/NetPage_pro1, main, f47d523 起）；`wrangler deploy --dry-run` 通过；账号部署待凭据（dashboard 人机质询+无会话 / wrangler 未登录 / 无 API token），三选一：给 API token、本机 wrangler login、dashboard Import from GitHub。Google 真登录代码侧已就绪，待 Console 人工建 Client（README 清单）。
 
 **ToDo**
 - [x] 新增页面同步登记 i18n 键：登录 / 账户 / 开发收件箱（约 40 键 ×2 语）；库 / 指南页创建时继续同步
@@ -248,7 +250,7 @@
 | Phase 1 ✅ | M1 认证：演示适配器 + 真后端骨架（node:http + JSON 仓储 + HMAC 会话 + 邮件适配器接口）；生产剩余 = OAuth Client / 真实邮件 / DB 迁移 | 域名/部署/邮件服务 |
 | Phase 2 ✅（dev 级） | M2 支付与积分账本：checkout + 幂等入账 + 四类流水 + `/api/pricing` 单一事实源 + 余额门槛；生产剩余 = Stripe 真接入 | Stripe 账号 |
 | Phase 3 ✅（dev 级） | M3 生成管线：jobs 状态机 + 预签名直传 + 轮询 + 失败返还/僵尸兜底 + 并发上限；DevVendor 结算；**部署运行时 = Cloudflare Workers**（KV+R2+Cron+Assets，wrangler dev E2E 通过）；生产剩余 = 真 vendor 适配（首发 MiniMax H3）、审核、成本告警 | 模型 vendor 账号与额度；Cloudflare 账号 + KV/R2 绑定 + DS_SECRET |
-| Phase 4 | M4 作品库 + M8 合规页 | 对象存储 |
+| Phase 4 ✅（dev 级） | M4 作品库（creations 页 + 签名下载 + 删除 + 过期清扫）+ M8 合规页（privacy/terms + 删除 API + 声明）+ M9 chip 即时刷新；生产剩余 = R2 真成片流式下载、客服申诉通道 | 对象存储 |
 | Phase 5 | M6 真实示例 + M7 内容 SEO + M9 通知 |  Phase 3 产出素材 |
 
 ---

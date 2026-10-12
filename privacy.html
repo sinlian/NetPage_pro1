@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy | DuoStage AI</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23ff2e7e'/%3E%3Crect x='26' y='14' width='12' height='26' rx='6' fill='%23fff'/%3E%3Cpath d='M20 34a12 12 0 0 0 24 0' fill='none' stroke='%23fff' stroke-width='4' stroke-linecap='round'/%3E%3Cline x1='32' y1='46' x2='32' y2='52' stroke='%23fff' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-title-key="priv.title">
+
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="logo" href="index.html">
+      <span class="logo-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="18" height="18"><rect x="9.5" y="3" width="5" height="10" rx="2.5" fill="#fff"/><path d="M7 11a5 5 0 0 0 10 0" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="16.5" x2="12" y2="20" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+      </span>
+      <span class="logo-word">duo<strong>stage</strong></span>
+      <span class="badge">AI</span>
+    </a>
+    <div class="lang-switch">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><ellipse cx="12" cy="12" rx="4" ry="9" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="3" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="1.6"/></svg>
+      <select id="langSelect" aria-label="Language">
+        <option value="en">English</option>
+        <option value="zh">中文</option>
+      </select>
+    </div>
+    <nav class="nav" id="siteNav" aria-label="Main">
+      <a href="index.html" data-i18n="nav.home">Studio</a>
+      <a href="terms.html" data-i18n="ft.l8">Terms</a>
+      <span class="nav-auth" id="navAuth"></span>
+    </nav>
+  </div>
+</header>
+
+<main class="page-main">
+  <div class="container narrow">
+    <div class="card auth-card legal-card">
+      <h1 data-i18n="priv.h1">Privacy</h1>
+      <p class="card-sub" data-i18n="priv.lead">What we store, why, and how to make it disappear.</p>
+      <h2 data-i18n="priv.s1h">What we store</h2>
+      <p data-i18n="priv.s1p">Your account (email and sign-in method), the photos you upload, generated renders, and the credit ledger needed to bill renders correctly. Nothing else.</p>
+      <h2 data-i18n="priv.s2h">How photos are used</h2>
+      <p data-i18n="priv.s2p">Uploads are used only to generate your clip and are passed to the video model for that purpose. They are never sold, shared for advertising, or used to train models.</p>
+      <h2 data-i18n="priv.s3h">Retention</h2>
+      <p data-i18n="priv.s3p">Uploads and renders are kept for up to 30 days, then purged automatically. Download anything you want to keep before then.</p>
+      <h2 data-i18n="priv.s4h">Your deletion controls</h2>
+      <p data-i18n="priv.s4p">From the account page you can delete your uploads, your renders, or your entire account at any time. Deletion is immediate and irreversible.</p>
+      <h2 data-i18n="priv.s5h">Local storage</h2>
+      <p data-i18n="priv.s5p">Your browser keeps a session token and your language choice locally. Before you sign in, selected photos stay on your device only.</p>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-base">
+    <p class="fine" data-i18n="ft.base">© 2026 DuoStage — a static demo site. Not affiliated with any music artist or label.</p>
+  </div>
+</footer>
+
+<script src="js/i18n.js"></script>
+<script src="js/auth.js"></script>
+</body>
+</html>

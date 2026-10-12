@@ -100,6 +100,23 @@ export async function sweepJobs(db, cfg, nowMs) {
   return swept;
 }
 
+/* purge renders past their expires timestamp (storage lifecycle policy) */
+export async function sweepRenders(db, cfg, nowMs, bucket) {
+  const now = nowMs || Date.now();
+  const rows = await db.all("renders");
+  let purged = 0;
+  for (const r of rows) {
+    if (r.expires && now > r.expires) {
+      if (bucket && r.r2_key) { try { await bucket.delete(r.r2_key); } catch (e) { /* ignore */ } }
+      await db.del("renders", r.id);
+      const job = await db.get("jobs", r.job_id);
+      if (job && job.render === r.id) { job.render = null; await db.set("jobs", job.id, job); }
+      purged++;
+    }
+  }
+  return purged;
+}
+
 export async function listJobs(db, userId) {
   const rows = await db.all("jobs");
   return rows
@@ -118,7 +135,7 @@ export async function listJobsWithRenders(db, userId) {
   for (const j of jobs) {
     if (j.render) {
       const r = await db.get("renders", j.render);
-      j.render = r ? { output_url: r.output_url, thumb_url: r.thumb_url, expires: r.expires } : null;
+      j.render = r ? { id: r.id, output_url: r.output_url, thumb_url: r.thumb_url, expires: r.expires } : null;
     }
   }
   return jobs;

@@ -27,6 +27,23 @@
       msg.hidden = false;
     }
 
+    /* 0) google callback hands back a session token via the url fragment */
+    var gm = location.hash.match(/google-token=([^&]+)/);
+    if (gm) {
+      history.replaceState(null, "", location.pathname + location.search);
+      Auth.ensure().then(function () {
+        return Auth.adoptSession(decodeURIComponent(gm[1]));
+      }).then(function (user) {
+        if (user) {
+          showMsg(t("login.welcome").replace("{email}", user.email), "ok");
+          Auth.renderHeaderAuth();
+          setTimeout(function () { location.href = "index.html"; }, 900);
+        } else {
+          showMsg(t("login.invalid"), "err");
+        }
+      });
+    }
+
     /* 1) arriving with ?token=... means the magic link was clicked */
     var params = new URLSearchParams(location.search);
     var token = params.get("token");
@@ -66,16 +83,18 @@
       });
     }
 
-    /* 3) Google — real OAuth pending; demo adapter in local mode */
+    /* 3) Google — real OAuth when configured, demo adapter in local mode */
     if (googleBtn) {
       googleBtn.addEventListener("click", function () {
         Auth.ensure().then(function () {
-          return Auth.signInGoogleDemo();
-        }).then(function (res) {
-          if (!res.ok) { showMsg(t("login.googlePending"), "err"); return; }
-          Auth.renderHeaderAuth();
-          if (Auth.mode() === "local") toast(t("login.googleDemo"));
-          setTimeout(function () { location.href = "index.html"; }, 900);
+          if (Auth.googleConfigured()) { Auth.startGoogle(); return; }
+          if (Auth.mode() === "http") { showMsg(t("login.googlePending"), "err"); return; }
+          return Auth.signInGoogleDemo().then(function (res) {
+            if (!res.ok) { showMsg(t("login.googlePending"), "err"); return; }
+            Auth.renderHeaderAuth();
+            toast(t("login.googleDemo"));
+            setTimeout(function () { location.href = "index.html"; }, 900);
+          });
         });
       });
     }

@@ -193,6 +193,20 @@
       if (mode !== "http") return Promise.resolve([]);
       return api("/api/jobs").then(function (r) { return r.status === 200 ? r.body.jobs : []; });
     },
+    renders: function () {
+      if (mode !== "http") return Promise.resolve([]);
+      return api("/api/renders").then(function (r) { return r.status === 200 ? r.body.renders : []; });
+    },
+    deleteRender: function (id) {
+      if (mode !== "http") return Promise.resolve(false);
+      return api("/api/renders/" + encodeURIComponent(id), { method: "DELETE" })
+        .then(function (r) { return r.status === 200; });
+    },
+    deletionRequest: function (scope) {
+      if (mode !== "http") return Promise.resolve({ ok: false, error: "local" });
+      return api("/api/deletion-request", { method: "POST", body: JSON.stringify({ scope: scope }) })
+        .then(function (r) { return r.status === 200 ? r.body : { ok: false, error: (r.body && r.body.error) || "failed" }; });
+    },
 
     /* refresh the header balance chip from the server */
     refreshBalanceChip: function () {
