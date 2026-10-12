@@ -10,3 +10,4 @@ workers/st.log
 workers/.wrangler/
 node_modules/
 .DS_Store
+"st.log"  
